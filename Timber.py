@@ -5,6 +5,7 @@ import random as rnd
 import math
 from forTimber import RhinoCommonOriginalMethods as rsOri
 
+
 class Timber:
 
     # 初期化
