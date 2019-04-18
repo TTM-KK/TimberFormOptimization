@@ -55,6 +55,126 @@ class Generate:
             timber.mesureSectionLength()
             timber.initDistance(self.num_all_timber)
 
+    def generate_ground_init(self, generate_range, objects_curve=None, objects_point=None):
+        """
+        :param generate_range: 生成可能範囲の入力ー＞int
+        :param objects_curve Rhinocerosの閉じたCurveで範囲を指定。Rhino.Objectに変換したものを引数へ
+        :param generate_point: RhinocerosのPointで指定するRhino.Objectに変換したものを引数へ
+        :return:
+        """
+
+        if len(self.used_list) == 0:
+            tim = self.timber_list[0]
+        else:
+            index = rnd.randint(0, len(self.timber_list) - 1)
+            tim = self.timber_list[index]
+
+        tim_srf = tim.surface
+        tim_axis = tim.center_line
+
+        axis_start_p = tim_axis.PointAtStart
+        axis_end_p = tim_axis.PointAtEnd
+
+        # if generate range is predetermined
+        # objects_curve = []
+        # if len(self.used_list) == 0 and generate_range_curve:
+        #     for i in range(len(generate_range_curve)):
+        #         curve = rs.coercecurve(generate_range_curve[i])
+        #         objects_curve.append(curve)
+
+        # if generate base point is predetermined
+        # objects_point = []
+        # if len(self.used_list) == 0 and generate_point:
+        #     for i in range(len(generate_point)):
+        #         point = rs.coerce3dpoint(generate_point[i])
+        #         objects_point.append(point)
+
+        # if generate range is predetermined for closed curve, get a point in it TODO 生成の際にぶつからないようにする。
+        if objects_curve:
+            flag = True
+            loop = 0
+            while flag:
+                loop += 1
+                x = rnd.randint(0, generate_range)
+                y = rnd.randint(0, generate_range)
+
+                point_base = Rhino.Geometry.Point3d(x, y, 0)
+
+                for i in range(len(objects_curve)):
+                    rc = objects_curve[i].Contains(point_base)
+                    if rc == Rhino.Geometry.PointContainment.Inside:
+                        flag = False
+                        break
+
+                if loop > 100:
+                    raise Exception("while infinite loop")
+
+        elif objects_point:
+            select_index = rnd.randint(0, len(objects_point)-1)
+
+            point_base = objects_point[select_index]
+            del objects_point[select_index]  # TODO 他の場所と干渉する恐れがあるので要注意
+
+        else:
+            x = rnd.randint(0, generate_range)
+            y = rnd.randint(0, generate_range)
+            point_base = Rhino.Geometry.Point3d(x, y, 0)
+
+        # selectされたpointとaxisの端点とのベクトルを計算
+        if axis_end_p[2] > axis_start_p[2]:
+            point_base_tim = axis_start_p
+        else:
+            point_base_tim = axis_end_p
+
+        vector_from_tim = point_base - point_base_tim
+
+        # timをbaseまでMoveさせる
+        xf = Rhino.Geometry.Transform.Translation(vector_from_tim)
+        tim_axis.Transform(xf)
+        tim_srf.Transform(xf)
+
+        # 接点からのフリをランダムにする。 TODO 一旦部材がほとんど垂直に置かれていることを前提にアルゴリズムを構築
+        restriction_angle = 45
+
+        p1 = Rhino.Geometry.Point3d(0, 0, 0)
+        p2 = Rhino.Geometry.Point3d(0, 0, 10)
+        p3 = Rhino.Geometry.Point3d(10, 0, 0)
+
+        plane1 = Rhino.Geometry.Plane(p1, p2, p3)
+        rotate_angle = math.radians(rnd.randint(-restriction_angle, restriction_angle))
+        xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane1[3], point_base)
+        tim_srf.Transform(xf)
+        tim_axis.Transform(xf)
+
+        p1 = Rhino.Geometry.Point3d(0, 0, 0)
+        p2 = Rhino.Geometry.Point3d(0, 10, 0)
+        p3 = Rhino.Geometry.Point3d(10, 0, 0)
+
+        plane2 = Rhino.Geometry.Plane(p1, p2, p3)
+        rotate_angle = math.radians(rnd.randint(-restriction_angle, -restriction_angle))
+        xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane2[3], point_base)
+        tim_srf.Transform(xf)
+        tim_axis.Transform(xf)
+
+        # 各パラメータの更新
+
+        # 木材同士の間隔の最小値を計測。
+        if len(self.used_list) == 0:
+            pass
+        else:
+            for i in range(len(self.used_list)):
+                timber.distanceBetweenTimber_RhinoCommon(self.used_list[i], tim)
+
+        # 木材未使用、使用リストの更新
+        if len(self.used_list) == 0:
+            self.used_list.append(tim)
+            self.timber_list.pop(0)
+        else:
+            self.used_list.append(tim)
+            self.timber_list.pop(index)
+
+        return True
+
     def cantilever(self, limit_degree):
         divide_domain_num = 10
 
@@ -366,7 +486,6 @@ class Generate:
         # end_time = time.time()
         # print("Processing Cantilever_RhinoCommon Time : %s" % (end_time - start_time))
         return True
-
 
     def bridge(self, limit_degree):
         # start_time = time.time()
@@ -1038,7 +1157,6 @@ class Generate:
                 rs.ObjectLayer(self.not_use_list[i].center_line, center_line)
                 for j in range(0, len(self.not_use_list[i].drill_line_list)):
                     rs.ObjectLayer(self.not_use_list[i].drill_line_list[j], drill_line)
-
 
     def checkPartner(self, loop_num):
 
