@@ -4,14 +4,15 @@ import scriptcontext
 import rhinoscript.utility as rhutil
 import copy
 
-def MoveTimberObjects(timber_1, timber_2, vector_move):
+def MoveTimberObjects(vector_move, timber_1, timber_2=None):
     xf = Rhino.Geometry.Transform.Translation(vector_move)
 
     timber_1.center_line.Transform(xf)
     timber_1.surface.Transform(xf)
 
-    timber_2.center_line.Transform(xf)
-    timber_2.surface.Transform(xf)
+    if timber_2:
+        timber_2.center_line.Transform(xf)
+        timber_2.surface.Transform(xf)
 
     # rs.MoveObject(timber_1.center_line, vector_move)
     # rs.MoveObject(timber_1.surface, vector_move)

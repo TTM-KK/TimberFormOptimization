@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+
 from Generate import Generate
 import rhinoscriptsyntax as rs
 import time
@@ -19,47 +20,43 @@ import GA.Crossover
 import GA.Method
 import ReGenerate
 
-
-num_timber = 30         # timberの総本数
+num_timber = 20  # timberの総本数
 num_base_timber = 10
-cantilever_num = 10     # 初期生成時の全体の中でのcantileverの数
-bridge_num = 10
+cantilever_num = 5  # 初期生成時の全体の中でのcantileverの数
+bridge_num = 5
 
-divide_range = 5        # 次世代に継承する材の最低本数を指定
-pop_num = 30            # 初期個体数。世代ごとの個体数　ttm add 181003
-elite_num = 2           # エリート選択における選択数。
-generation_num = 30     # 世代数
-tournament_size = 5     # トーナメントサイズ
-tournament_num = 3      # トーナメント選択の回数
-mutation_ratio = 3      # 突然変異の確率
-initial_population_draw = False
-flag_high = True        # ソート昇順の場合True　降順の場合False
+divide_range = 5  # 次世代に継承する材の最低本数を指定
+pop_num = 5  # 初期個体数。世代ごとの個体数　ttm add 181003
+elite_num = 1  # エリート選択における選択数。
+generation_num = 5  # 世代数
+tournament_size = 2  # トーナメントサイズ
+tournament_num = 1  # トーナメント選択の回数
+mutation_ratio = 3  # 突然変異の確率
+initial_population_draw = True
+flag_high = True  # ソート昇順の場合True　降順の場合False
 
-connect_count = 10      # 接合制約数
-name_list = []          # timberの名前
-prototype_ID = 0        # 試作個体の番号
-pop_size = pop_num      # 交叉時に生成する個体数
-generate_range = 3000   # 生成可能範囲を指定。（現在は立方体） TODO 立方体以外にも対応したいところ。
+connect_count = 10  # 接合制約数
+name_list = []  # timberの名前
+prototype_ID = 0  # 試作個体の番号
+pop_size = pop_num  # 交叉時に生成する個体数
+generate_range = 3000  # 生成可能範囲を指定。（現在は立方体） TODO 立方体以外にも対応したいところ。
 between_draw_rhino = generation_num  # generation_numを割り切れる数で指定すること。
 
-
-evaluate_list = []        # 各世代の評価値を保存しておくためのリスト
+evaluate_list = []  # 各世代の評価値を保存しておくためのリスト
 # temp_center_line = []   # 複製した中心線のリスト
 # temp_surface = []       # 複製したサーフェスのリスト
 # temp_mark = []
-timber_num = []           # Timberクラスの各インスタンスの通し番号を格納するリスト
+timber_num = []  # Timberクラスの各インスタンスの通し番号を格納するリスト
 new_gene_num_list = []
 
 # 制約条件
 limit_degree = [45, 135]  # 接合角度制約
 
-
 # boolean
-input_flag = False        # 再生成アルゴリズム用　デバック時に使用すると便利
-redraw_flag = False       # 描画を逐一見るためのフラグ。重くなると思うから普段はFalseで
+input_flag = False  # 再生成アルゴリズム用　デバック時に使用すると便利
+redraw_flag = False  # 描画を逐一見るためのフラグ。重くなると思うから普段はFalseで
 information_flag = False
 layer_flag = False
-
 
 rs.AddLayer('all_pop_layer')
 rs.CurrentLayer('all_pop_layer')
@@ -78,7 +75,6 @@ all_surface = get_obj[1]
 
 for i in range(0, num_timber):
     name_list.append(i)
-
 
 # Step1: サーフィスと中心線を（個体数*Timberの種類）だけ複製。後でインスタンス変数に取り込むため、リストに格納する
 temp_center_line = Instance.axis_instance(pop_num, center_line)
@@ -102,13 +98,11 @@ for i in range(pop_num):
     dic['generate' + str(i)] = Generate(temp_center_line[i], temp_surface[i], name_list, num_timber, prototype_ID,
                                         timber_num[i])
 
-
 # Step3: 各Generateクラスのインスタンス毎にTimberクラスのインスタンスを作成
 for j in range(pop_num):
     dic['generate' + str(j)].instantiate_timber()  # Timberクラスのインスタンスを作成するGenerateクラスのメソッド
     dic['generate' + str(j)].pop_index = j  # 個体番号を振る
     # print("pop_index", dic['generate' + str(j)].pop_index)
-
 
 closed_curve = rs.GetObjects("select closed curves, base timber generated")
 objects_curve = []
@@ -118,7 +112,6 @@ if closed_curve:
         objects_curve.append(curve)
 else:
     raise Exception('select closed curve is Error')
-
 
 # Step4 初期生成
 t1 = time.time()
@@ -154,41 +147,31 @@ for i in range(pop_num):
             pass
         else:
             raise Exception('bridge is fail')
-    
-    # # flag_success = False
-    # flag_success = dic['generate' + str(i)].cantilever(limit_degree)  # Initial Generate Method.
-    # # if not flag_success:
-    # #     input("initial cantilever not success")
-    #
-    # tim1 = dic['generate' + str(i)].used_list[0]
-    # tim2 = dic['generate' + str(i)].used_list[1]
-    #
-    # copy_from = Rhino.Geometry.Point3d(0, 0, 0)
-    # copy_to = Rhino.Geometry.Point3d((generate_range * 2) * i, - generate_range * 2, 0)
-    # vec_move = copy_to - copy_from
-    #
-    # MoveObject.MoveTimberObjects(vec_move, tim1, tim2)  # Moving Objects method for tim1,tim2
-    #
-    # if cantilever_num > num_timber - 2:  # if cantilever_num is not good, stop python script
-    #     sys.exit("cantilever_num is not suitable for num_timber")
-    #
-    # cantilever_start = time.time()  # Initial Cantilever generate part
-    # for j in range(cantilever_num - 2):
-    #     # flag_success = False
-    #     flag_success = dic['generate' + str(i)].cantilever(limit_degree)
-    #     # if not flag_success:
-    #     #     input("line 128 cantilever not success")
-    # cantilever_end = time.time()
-    # # print("Initial Cantilever Method end time: %s this is num %s population" %(cantilever_end - cantilever_start, i))
-    #
-    # bridge_start = time.time()  # Initial Bridge generate part
-    # for j in range(num_timber - cantilever_num):
-    #     # flag_success = False
-    #     flag_success = dic['generate' + str(i)].bridge(limit_degree)
-    #     # if not flag_success:
-    #     #     input("line 137 bridge not success")
-    # bridge_end = time.time()
-    # # print("Initial Bridge Method end time: %s this is num %s population" %(bridge_end - bridge_start, i))
+
+    print('success : %s' % i)
+
+# 初期個体が分裂していないか確認。
+# for i in range(pop_num):
+#     pop = dic['generate' + str(i)]
+#     flag_divide = GA.Method.confirm_pop_divide(num_timber, pop)
+#     print("flag_divide : %s  Time: %s" % flag_divide)
+
+# Rhinoに描画されるオブジェクとに置き換える。
+if initial_population_draw:
+    for i in range(pop_num):
+        for j in range(num_timber):
+            if layer_flag:
+                a = 'tim'
+                b = str(dic['generate' + str(i)].used_list[j].name)
+                rs.CurrentLayer(a + b)
+
+            sf = scriptcontext.doc.Objects.AddBrep(dic['generate' + str(i)].used_list[j].surface)
+            crv = scriptcontext.doc.Objects.AddCurve(dic['generate' + str(i)].used_list[j].center_line)
+
+t2 = time.time()
+init_generation_time = t2 - t1  # time of Initial Generate
+print("\n")
+print("init generation time: %s" % init_generation_time)
 
 
 # 初期個体が分裂していないか確認。
@@ -561,22 +544,3 @@ print("Processing Time : %s" % (program_finish - program_start))
 
 # グラフに評価値の推移を描画
 drawInformatinon.drawEvaluateValue(evaluate_list)
-
-#
-# partner_list = []
-# for i in range(len(pop_1.used_list)):
-#     partner_list.append(pop_1.used_list[i].partner_tim)
-# print("partner_list : %s"%(partner_list))
-
-#
-# value = []
-# for i in range(pop_num):
-#     length = len(dic['generate' + str(i)].used_list)
-#     value.append(length)
-# sum_list = sum(value)
-# print("sum of used_timber_num", sum_list)
-#
-# for i in range(pop_num):
-#     for j in range(num_timber):
-#         srf = dic['generate' + str(i)].used_list[j].surface
-#         print("srf", srf)
