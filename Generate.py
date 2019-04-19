@@ -178,104 +178,163 @@ class Generate:
     def cantilever(self, limit_degree):
         divide_domain_num = 10
 
-        # 各オブジェクトの取得　--->  Timber Instanceに置き換える
-        if len(self.used_list) == 0:
-            used_timber = self.timber_list[0]
-            unused_timber = self.timber_list[1]
+        for h in range(10):
+            if h == 9:
+                raise Exception('GL avoid is not work well')
 
-        else:
-            x = rnd.randint(0, len(self.used_list) - 1)
-            used_timber = self.used_list[x]
+            # 各オブジェクトの取得　--->  Timber Instanceに置き換える
+            if len(self.used_list) == 0:
+                used_timber = self.timber_list[0]
+                unused_timber = self.timber_list[1]
 
-            y = rnd.randint(0, len(self.timber_list) - 1)
-            unused_timber = self.timber_list[y]
+            else:
+                x = rnd.randint(0, len(self.used_list) - 1)
+                used_timber = self.used_list[x]
 
-        # tim1_srf = rhutil.coercebrep(used_timber.surface)
-        # tim2_srf = rhutil.coercebrep(unused_timber.surface)
-        tim1_srf = used_timber.surface
-        tim2_srf = unused_timber.surface
+                y = rnd.randint(0, len(self.timber_list) - 1)
+                unused_timber = self.timber_list[y]
 
-        # tim1_center_crv = rhutil.coercecurve(used_timber.center_line)
-        # tim2_center_crv = rhutil.coercecurve(unused_timber.center_line)
-        tim1_center_crv = used_timber.center_line
-        tim2_center_crv = unused_timber.center_line
+            # tim1_srf = rhutil.coercebrep(used_timber.surface)
+            # tim2_srf = rhutil.coercebrep(unused_timber.surface)
+            tim1_srf = used_timber.surface
+            tim2_srf = unused_timber.surface
 
-        # cantileverのRun timeを計測する
-        # start_time = time.time()
+            # tim1_center_crv = rhutil.coercecurve(used_timber.center_line)
+            # tim2_center_crv = rhutil.coercecurve(unused_timber.center_line)
+            tim1_center_crv = used_timber.center_line
+            tim2_center_crv = unused_timber.center_line
 
-        domain_crv1 = tim1_center_crv.Domain
-        domain_crv2 = tim2_center_crv.Domain
+            # cantileverのRun timeを計測する
+            # start_time = time.time()
 
-        each_domain_length1 = (domain_crv1[1] - domain_crv1[0]) / divide_domain_num
-        each_domain_length2 = (domain_crv2[1] - domain_crv2[0]) / divide_domain_num
+            domain_crv1 = tim1_center_crv.Domain
+            domain_crv2 = tim2_center_crv.Domain
 
-        select_domain1 = used_timber.selectSurfaceDomain_2()
-        select_domain2 = unused_timber.selectSurfaceDomain_2()
+            each_domain_length1 = (domain_crv1[1] - domain_crv1[0]) / divide_domain_num
+            each_domain_length2 = (domain_crv2[1] - domain_crv2[0]) / divide_domain_num
 
-        # select_domain1 = 2
-        # select_domain2 = rnd.randint(0, 9)
+            select_domain1 = used_timber.selectSurfaceDomain_2()
+            select_domain2 = unused_timber.selectSurfaceDomain_2()
 
-        tim1_point = tim1_center_crv.PointAt(domain_crv1[0] + select_domain1 * each_domain_length1)
-        tim2_point = tim2_center_crv.PointAt(domain_crv2[0] + select_domain2 * each_domain_length2)
+            # select_domain1 = 2
+            # select_domain2 = rnd.randint(0, 9)
 
-        vec_move = tim1_point - tim2_point
+            tim1_point = tim1_center_crv.PointAt(domain_crv1[0] + select_domain1 * each_domain_length1)
+            tim2_point = tim2_center_crv.PointAt(domain_crv2[0] + select_domain2 * each_domain_length2)
 
-        xf = Rhino.Geometry.Transform.Translation(vec_move)
-        tim2_center_crv.Transform(xf)
-        tim2_srf.Transform(xf)
+            vec_move = tim1_point - tim2_point
 
-        p1 = Rhino.Geometry.Point3d(0, 0, 0)
-        p2 = Rhino.Geometry.Point3d(0, 0, 10)
-        p3 = Rhino.Geometry.Point3d(10, 0, 0)
-
-        plane1 = Rhino.Geometry.Plane(p1, p2, p3)
-        rotate_angle = math.radians(rnd.randint(0, 360))
-        xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane1[3], tim1_point)
-        tim2_center_crv.Transform(xf)
-        tim2_srf.Transform(xf)
-        # print("rotate angle", math.degrees(rotate_angle))
-
-        # TODO 要検討
-        # 角度制約を計算するためのコード
-        # tim1_start_point = tim1_center_crv.PointAt(domain_crv1[0])
-        # tim1_end_point = tim1_center_crv.PointAt(domain_crv1[1])
-        #
-        # tim2_start_point = tim2_center_crv.PointAt(domain_crv2[0])
-        # tim2_end_point = tim2_center_crv.PointAt(domain_crv2[1])
-        #
-        # vec_tim1 = tim1_start_point - tim1_end_point
-        # vec_tim2 = tim2_start_point - tim2_end_point
-        #
-
-        p1 = Rhino.Geometry.Point3d(0, 0, 0)
-        p2 = Rhino.Geometry.Point3d(0, 10, 0)
-        p3 = Rhino.Geometry.Point3d(10, 0, 0)
-
-        plane2 = Rhino.Geometry.Plane(p1, p2, p3)
-        rotate_angle = math.radians(rnd.randint(0, 360))
-        xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane2[3], tim1_point)
-        tim2_center_crv.Transform(xf)
-        tim2_srf.Transform(xf)
-
-        length1, rc1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim1_srf, tim1_point)
-        length2, rc2 = oriRhino.GetTimberSectionLength_RhinoCommon(tim2_srf, tim2_point)
-
-        # print("rc1", rc1)
-        vec_move = rc1 - tim2_point
-        if length1 > length2:
-            rc = Rhino.Geometry.Vector3d(vec_move.X, vec_move.Y, vec_move.Z)
-            rc.Unitize()
-            vec_move = rc * ((length1 / 2) + (length2 / 3))
             xf = Rhino.Geometry.Transform.Translation(vec_move)
-            tim2_srf.Transform(xf)
             tim2_center_crv.Transform(xf)
-        else:
-            rc = Rhino.Geometry.Vector3d(vec_move.X, vec_move.Y, vec_move.Z)
-            rc.Unitize()
-            vec_move = rc * ((length1 / 2) + (length2 / 3))
-            xf = Rhino.Geometry.Transform.Translation(vec_move)
             tim2_srf.Transform(xf)
-            tim2_center_crv.Transform(xf)
+
+            p1 = Rhino.Geometry.Point3d(0, 0, 0)
+            p2 = Rhino.Geometry.Point3d(0, 0, 10)
+            p3 = Rhino.Geometry.Point3d(10, 0, 0)
+
+            plane1 = Rhino.Geometry.Plane(p1, p2, p3)
+
+            # 部材をGLに生成しないようにする、部材端のz座標を計算している。
+            flag_gl = True
+            avoid_infinite_loop = 0
+            while flag_gl:
+
+                avoid_infinite_loop += 1
+
+                rotate_angle = math.radians(rnd.randint(0, 360))
+                xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane1[3], tim1_point)
+                tim2_center_crv.Transform(xf)
+                tim2_srf.Transform(xf)
+
+                tim2_crv_end = tim2_center_crv.PointAtEnd
+                tim2_crv_start = tim2_center_crv.PointAtStart
+
+                if tim2_crv_end[2] > 100 and tim2_crv_start[2] > 100:
+                    flag_gl = False
+
+                if avoid_infinite_loop > 100:
+                    print('infinite loop is occur')
+                    break
+
+            if flag_gl:
+                continue
+            else:
+                pass
+
+            # print("rotate angle", math.degrees(rotate_angle))
+
+            # TODO 要検討
+            # 角度制約を計算するためのコード
+            # tim1_start_point = tim1_center_crv.PointAt(domain_crv1[0])
+            # tim1_end_point = tim1_center_crv.PointAt(domain_crv1[1])
+            #
+            # tim2_start_point = tim2_center_crv.PointAt(domain_crv2[0])
+            # tim2_end_point = tim2_center_crv.PointAt(domain_crv2[1])
+            #
+            # vec_tim1 = tim1_start_point - tim1_end_point
+            # vec_tim2 = tim2_start_point - tim2_end_point
+            #
+
+            p1 = Rhino.Geometry.Point3d(0, 0, 0)
+            p2 = Rhino.Geometry.Point3d(0, 10, 0)
+            p3 = Rhino.Geometry.Point3d(10, 0, 0)
+
+            plane2 = Rhino.Geometry.Plane(p1, p2, p3)
+
+            # GLに部材を生成しないために部材端のz座標値を計算
+            flag_gl = True
+            avoid_infinite_loop = 0
+            while flag_gl:
+
+                avoid_infinite_loop += 1
+
+                rotate_angle = math.radians(rnd.randint(0, 360))
+                xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane2[3], tim1_point)
+                tim2_center_crv.Transform(xf)
+                tim2_srf.Transform(xf)
+
+                tim2_crv_end = tim2_center_crv.PointAtEnd
+                tim2_crv_start = tim2_center_crv.PointAtStart
+
+                if tim2_crv_end[2] > 100 and tim2_crv_start[2] > 100:
+                    flag_gl = False
+
+                if avoid_infinite_loop > 100:
+                    print('infinite loop is occur')
+                    break
+
+            if flag_gl:
+                continue
+            else:
+                pass
+
+            length1, rc1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim1_srf, tim1_point)
+            length2, rc2 = oriRhino.GetTimberSectionLength_RhinoCommon(tim2_srf, tim2_point)
+
+            # print("rc1", rc1)
+            vec_move = rc1 - tim2_point
+            if length1 > length2:
+                rc = Rhino.Geometry.Vector3d(vec_move.X, vec_move.Y, vec_move.Z)
+                rc.Unitize()
+                vec_move = rc * ((length1 / 2) + (length2 / 3))
+                xf = Rhino.Geometry.Transform.Translation(vec_move)
+                tim2_srf.Transform(xf)
+                tim2_center_crv.Transform(xf)
+            else:
+                rc = Rhino.Geometry.Vector3d(vec_move.X, vec_move.Y, vec_move.Z)
+                rc.Unitize()
+                vec_move = rc * ((length1 / 2) + (length2 / 3))
+                xf = Rhino.Geometry.Transform.Translation(vec_move)
+                tim2_srf.Transform(xf)
+                tim2_center_crv.Transform(xf)
+
+            tim2_crv_end = tim2_center_crv.PointAtEnd
+            tim2_crv_start = tim2_center_crv.PointAtStart
+
+            if tim2_crv_end[2] > 100 and tim2_crv_start[2] > 100:
+                break
+            else:
+                continue
 
         # a = 'tim'
         # b = str(unused_timber.name)
@@ -338,6 +397,7 @@ class Generate:
     def cantilever_specify(self, tim_preexist_num, tim_add_num, already_regenerated_list, limit_degree,
                            generation_num, loop_num, between_draw_rhino):
 
+        gl_distance = 0
         divide_domain_num = 10
 
         # 各オブジェクトの取得　--->  Timber Instanceに置き換える
@@ -385,10 +445,32 @@ class Generate:
         p3 = Rhino.Geometry.Point3d(10, 0, 0)
 
         plane1 = Rhino.Geometry.Plane(p1, p2, p3)
-        rotate_angle = math.radians(rnd.randint(0, 360))
-        xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane1[3], tim1_point)
-        tim2_center_crv.Transform(xf)
-        tim2_srf.Transform(xf)
+
+        # GL Method
+        flag = True
+        avoid_infinite_loop = 0
+        while flag:
+            avoid_infinite_loop += 1
+
+            rotate_angle = math.radians(rnd.randint(0, 360))
+            xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane1[3], tim1_point)
+            tim2_center_crv.Transform(xf)
+            tim2_srf.Transform(xf)
+
+            end_p = tim2_center_crv.PointAtEnd
+            start_p = tim2_center_crv.PointAtStart
+
+            if end_p[2] > gl_distance and start_p[2] > gl_distance:
+                break
+            else:
+                pass
+
+            if avoid_infinite_loop > 100:
+                break
+
+        if flag:
+            return False
+
         # print("rotate angle", math.degrees(rotate_angle))
 
         # TODO 要検討
@@ -408,10 +490,31 @@ class Generate:
         p3 = Rhino.Geometry.Point3d(10, 0, 0)
 
         plane2 = Rhino.Geometry.Plane(p1, p2, p3)
-        rotate_angle = math.radians(rnd.randint(0, 360))
-        xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane2[3], tim1_point)
-        tim2_center_crv.Transform(xf)
-        tim2_srf.Transform(xf)
+
+        # GL Method
+        flag = True
+        avoid_infinite_loop = 0
+        while flag:
+            avoid_infinite_loop += 1
+
+            rotate_angle = math.radians(rnd.randint(0, 360))
+            xf = Rhino.Geometry.Transform.Rotation(rotate_angle, plane2[3], tim1_point)
+            tim2_center_crv.Transform(xf)
+            tim2_srf.Transform(xf)
+
+            end_p = tim2_center_crv.PointAtEnd
+            start_p = tim2_center_crv.PointAtStart
+
+            if end_p[2] > gl_distance and start_p[2] > gl_distance:
+                break
+            else:
+                pass
+
+            if avoid_infinite_loop > 100:
+                break
+
+        if flag:
+            return False
 
         length1, rc1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim1_srf, tim1_point)
         length2, rc2 = oriRhino.GetTimberSectionLength_RhinoCommon(tim2_srf, tim2_point)
@@ -433,6 +536,16 @@ class Generate:
             tim2_srf.Transform(xf)
             tim2_center_crv.Transform(xf)
 
+        # GL Method
+        end_p = tim2_center_crv.PointAtEnd
+        start_p = tim2_center_crv.PointAtStart
+
+        if end_p[2] > gl_distance and start_p[2] > gl_distance:
+            pass
+        else:
+            return False
+
+        # 描画するかどうか
         if generation_num - 1 == loop_num:
             if self.flag_layer_change:
                 a = 'tim'
@@ -493,236 +606,253 @@ class Generate:
         split_ = 200
         split_domain_range_num = 10
 
-        for i in range(20):
-            flag_select_timber_domain = True
-            flag_select_timber_domain_success = False
+        for h in range(100):
 
-            flag_select_timber = False
-            for _ in range(1000):
-                # used_timberの選択
-                index = rnd.sample(xrange(len(self.used_list)), 2)
-                x1 = index[0]
-                x2 = index[1]
-                used_timber1 = self.used_list[x1]
-                used_timber2 = self.used_list[x2]
+            if h > 99:
+                raise Exception('bridge GL method is not work well')
 
-                # unused_timberの選択
-                y = rnd.randint(0, len(self.timber_list) - 1)
-                unused_timber = self.timber_list[y]
+            for i in range(20):
+                flag_select_timber_domain = True
+                flag_select_timber_domain_success = False
 
-                length_of_between = used_timber1.tim_distance[used_timber2.name][0]
-                length_of_timber = unused_timber.timber_length
-                # print("length_of_between", length_of_between)
-                # print("length_of_timber", length_of_timber)
+                flag_select_timber = False
+                for _ in range(1000):
+                    # used_timberの選択
+                    index = rnd.sample(xrange(len(self.used_list)), 2)
+                    x1 = index[0]
+                    x2 = index[1]
+                    used_timber1 = self.used_list[x1]
+                    used_timber2 = self.used_list[x2]
 
-                if length_of_timber < length_of_between:
-                    # print("length of timber is lack of length")
-                    continue
-                else:
-                    flag_select_timber = True
-                    break
+                    # unused_timberの選択
+                    y = rnd.randint(0, len(self.timber_list) - 1)
+                    unused_timber = self.timber_list[y]
 
-            if not flag_select_timber:
-                input("check select timber")
-                return False
+                    length_of_between = used_timber1.tim_distance[used_timber2.name][0]
+                    length_of_timber = unused_timber.timber_length
+                    # print("length_of_between", length_of_between)
+                    # print("length_of_timber", length_of_timber)
 
-            # tim1_srf = rhutil.coercebrep(self.used_list[tim_preexist_num_1].surface)
-            # tim2_srf = rhutil.coercebrep(self.used_list[tim_preexist_num_2].surface)
-            # tim3_srf = rhutil.coercebrep(unused_timber.surface)
-            tim3_srf = unused_timber.surface
-
-            # tim1_center_crv = rhutil.coercecurve(used_timber1.center_line)
-            # tim2_center_crv = rhutil.coercecurve(used_timber2.center_line)
-            # tim3_center_crv = rhutil.coercecurve(unused_timber.center_line)
-            tim1_center_crv = used_timber1.center_line
-            tim2_center_crv = used_timber2.center_line
-            tim3_center_crv = unused_timber.center_line
-
-            # # bridge可能か判断　その１
-            # distance = used_timber1.tim_distance[used_timber2.name][0]
-            # if distance + 100 > unused_timber.timber_length:
-            #     print("reselect timber cuz lack of length: in bridge")
-            #     return False
-
-            # Get each crv domain
-            domain_crv1 = tim1_center_crv.Domain
-            domain_crv2 = tim2_center_crv.Domain
-            domain_crv3 = tim3_center_crv.Domain
-            split_range = (domain_crv3[1] - domain_crv3[0]) / split_
-
-            # 指定したdomain内にある点を算出する。
-            domain_range1 = abs((domain_crv1[1] - domain_crv1[0]) / split_domain_range_num)
-            domain_range2 = abs((domain_crv2[1] - domain_crv2[0]) / split_domain_range_num)
-            domain_range3 = abs((domain_crv3[1] - domain_crv3[0]) / split_domain_range_num)
-
-            select_domain_3_start = 0  # TODO 今のところ固定値
-            for select_domain_loop in range(200):
-                select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
-                select_domain_2 = used_timber2.selectSurfaceDomain_2()
-
-                # print("select_domain_1", select_domain_1)
-                # print("select_domain_2", select_domain_2)
-
-                # TODO　ドメインの指定に関しては範囲内をランダムにする、中心線を単純にするなどによって精度を向上させること可能。
-                tim1_point = tim1_center_crv.PointAt(domain_crv1[0] + domain_range1 * select_domain_1)
-                tim2_point = tim2_center_crv.PointAt(domain_crv2[0] + domain_range2 * select_domain_2)
-
-                # tim1, tim2間の点と点の長さを取得する
-                distance_between = (tim1_point - tim2_point).Length
-
-                # bridge可能か判断　その２
-                length_tim3 = tim3_center_crv.GetLength() - tim3_center_crv.GetLength() / split_domain_range_num * 2
-                if distance_between > length_tim3 - (length_tim3 / 10) * 4:
-                    if select_domain_loop == 199:
-                        flag_select_timber_domain = False
+                    if length_of_timber < length_of_between:
+                        # print("length of timber is lack of length")
+                        continue
+                    else:
+                        flag_select_timber = True
                         break
 
+                if not flag_select_timber:
+                    input("check select timber")
+                    return False
+
+                # tim1_srf = rhutil.coercebrep(self.used_list[tim_preexist_num_1].surface)
+                # tim2_srf = rhutil.coercebrep(self.used_list[tim_preexist_num_2].surface)
+                # tim3_srf = rhutil.coercebrep(unused_timber.surface)
+                tim3_srf = unused_timber.surface
+
+                # tim1_center_crv = rhutil.coercecurve(used_timber1.center_line)
+                # tim2_center_crv = rhutil.coercecurve(used_timber2.center_line)
+                # tim3_center_crv = rhutil.coercecurve(unused_timber.center_line)
+                tim1_center_crv = used_timber1.center_line
+                tim2_center_crv = used_timber2.center_line
+                tim3_center_crv = unused_timber.center_line
+
+                # # bridge可能か判断　その１
+                # distance = used_timber1.tim_distance[used_timber2.name][0]
+                # if distance + 100 > unused_timber.timber_length:
+                #     print("reselect timber cuz lack of length: in bridge")
+                #     return False
+
+                # Get each crv domain
+                domain_crv1 = tim1_center_crv.Domain
+                domain_crv2 = tim2_center_crv.Domain
+                domain_crv3 = tim3_center_crv.Domain
+                split_range = (domain_crv3[1] - domain_crv3[0]) / split_
+
+                # 指定したdomain内にある点を算出する。
+                domain_range1 = abs((domain_crv1[1] - domain_crv1[0]) / split_domain_range_num)
+                domain_range2 = abs((domain_crv2[1] - domain_crv2[0]) / split_domain_range_num)
+                domain_range3 = abs((domain_crv3[1] - domain_crv3[0]) / split_domain_range_num)
+
+                select_domain_3_start = 0  # TODO 今のところ固定値
+                for select_domain_loop in range(200):
+
+                    # GL_01 に材が食い込むなら再選択
+                    select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
+                    select_domain_2 = used_timber2.selectSurfaceDomain_2()
+
+                    # print("select_domain_1", select_domain_1)
+                    # print("select_domain_2", select_domain_2)
+
+                    # TODO　ドメインの指定に関しては範囲内をランダムにする、中心線を単純にするなどによって精度を向上させること可能。
+                    tim1_point = tim1_center_crv.PointAt(domain_crv1[0] + domain_range1 * select_domain_1)
+                    tim2_point = tim2_center_crv.PointAt(domain_crv2[0] + domain_range2 * select_domain_2)
+
+                    # tim1, tim2間の点と点の長さを取得する
+                    distance_between = (tim1_point - tim2_point).Length
+
+                    # bridge可能か判断　その２
+                    # length_tim3 = tim3_center_crv.GetLength() - tim3_center_crv.GetLength() / split_domain_range_num * 2
+                    length_tim3 = tim3_center_crv.GetLength() / split_domain_range_num * 2
+                    if distance_between > length_tim3 - (length_tim3 / 10) * 4:
+                        if select_domain_loop == 199:
+                            flag_select_timber_domain = False
+                            break
+
+                        else:
+                            continue
                     else:
-                        continue
+                        flag_select_timber_domain_success = True
+                        break
+
+                if not flag_select_timber_domain:
+                    continue
+
+                if not flag_select_timber_domain_success:
+                    input("select timber domain is fail in Generate line 1422")
                 else:
-                    flag_select_timber_domain_success = True
                     break
+                    # # 制約条件 ---> 接合なす角
+                    # if select_domain_loop < 50:
+                    #     p1 = tim1_center_crv.PointAt(domain_crv1[0])
+                    #     p2 = tim1_center_crv.PointAt(domain_crv1[1])
+                    #     p3 = tim2_center_crv.PointAt(domain_crv2[0])
+                    #     p4 = tim2_center_crv.PointAt(domain_crv2[1])
+                    #
+                    #     v1 = p1 - p2
+                    #     v2 = p3 - p4
+                    #     v3 = tim1_point - tim2_point
+                    #
+                    #     v1_length = v1.Length
+                    #     v2_length = v2.Length
+                    #     v3_length = v3.Length
+                    #
+                    #     cos_theta1 = (v1*v3) / (v1_length*v3_length)
+                    #     cos_theta2 = (v2*v3) / (v2_length*v3_length)
+                    #
+                    #     degree1 = math.degrees(math.acos(cos_theta1))
+                    #     degree2 = math.degrees(math.acos(cos_theta2))
+                    #
+                    #     if limit_degree[0]<  degree1 < limit_degree[1]  and limit_degree[0]<  degree2 < limit_degree[1] :
+                    #         # print("OK")
+                    #         break
+                    #     else:
+                    #         # print("NO")
+                    #         continue
+                    # else:
+                    #     break
 
-            if not flag_select_timber_domain:
-                continue
+            # distance_betweenの距離よりもlength_tim3のほうが長かったとしても、EvaluateCurveで選択される点次第で長さが足りなくなることも十分に考えられるだろう。
+            # t = domain_crv3[0] + split_range*20
+            t = domain_crv3[0] + domain_range3 * select_domain_3_start  # このｔの値が変化することによってかけられるDomainの範囲が自由になる。
+            tim3_start_point_coordinate = tim3_center_crv.PointAt(t)
 
-            if not flag_select_timber_domain_success:
-                input("select timber domain is fail in Generate line 1422")
+            # distance_between と同じ長さとなるcrv3上のパラメータを取得。　点を加える。
+            t_ = domain_crv3[0]
+            flag_select = True
+            avoid_ = 0
+            while flag_select:
+                avoid_ = avoid_ + 1
+                t_ = t_ + split_range * 5  # ここを調整することでスピードを上げることができるはず。
+                tim3_end_point_coordinate = tim3_center_crv.PointAt(t_)  # RhinoCommon
+                distance = (tim3_end_point_coordinate - tim3_start_point_coordinate).Length  # RhinoCommon
+                if distance > distance_between:
+                    break
+                if avoid_ > 100:
+                    raise ValueError("infinite loop: select_domain_3_end")
+
+            # ObjectのMove
+            vec_move = tim1_point - tim3_start_point_coordinate  # RhinoCommon
+            # print("vec_move", vec_move)
+            xf = Rhino.Geometry.Transform.Translation(vec_move)
+            tim3_center_crv.Transform(xf)
+            tim3_srf.Transform(xf)
+
+            # 再計測
+            tim3_end_point = tim3_center_crv.PointAt(t_)
+            # tim3_start_point = tim3_center_crv.PointAt(t)
+
+            # print("tim3_end_point", tim3_end_point)
+            # print("tim3_start_point", tim3_start_point)
+
+            # 1回目のRotate
+            vec1 = tim1_point - tim3_end_point
+            vec2 = tim1_point - tim2_point
+            rotate_angle1 = oriRhino.VectorAngle_RhinoCommon(vec1, vec2)
+            plane1 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
+            xf = Rhino.Geometry.Transform.Rotation(rotate_angle1, plane1[3], tim1_point)
+            tim3_center_crv.Transform(xf)
+            tim3_srf.Transform(xf)
+
+            # 再計測
+            tim3_end_point = tim3_center_crv.PointAt(t_)
+            # tim3_start_point = tim3_center_crv.PointAt(t)
+
+            # 2回目のRotate
+            vec3 = tim3_end_point - tim1_point
+            vec4 = tim2_point - tim1_point
+            rotate_angle2 = oriRhino.VectorAngle_RhinoCommon(vec3, vec4)
+            plane2 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
+
+            if int(tim3_end_point[0]) - 10 <= int(tim2_point[0]) <= int(tim3_end_point[0]) + 10 or \
+                    int(tim3_end_point[1]) - 10 <= int(tim2_point[1]) <= int(tim3_end_point[1] + 10 or \
+                                                                             int(tim3_end_point[2]) - 10 <= int(
+                tim2_point[2]) <= int(tim3_end_point[2])) + 10:  # TODO 範囲の式に書き換える。
+                pass
             else:
+
+                xf = Rhino.Geometry.Transform.Rotation(rotate_angle2, plane2[3], tim1_point)
+                tim3_center_crv.Transform(xf)
+                tim3_srf.Transform(xf)
+
+            # 再計測
+            tim3_end_point = tim3_center_crv.PointAt(t_)
+            tim3_start_point = tim3_center_crv.PointAt(t)
+
+            # tim1とtim2のtim3にたいする外積をそれぞれ求める。
+            vec_tim3 = tim3_end_point - tim3_start_point
+            tim1_end_point = tim1_center_crv.PointAtEnd
+            vec_tim1 = tim1_end_point - tim1_point
+            tim2_end_point = tim2_center_crv.PointAtEnd
+
+            vec_tim2 = tim2_end_point - tim2_point
+
+            cross_vec1 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim1)
+            cross_vec2 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim2)
+            # cross_angle = oriRhino.VectorAngle_RhinoCommon(cross_vec1, cross_vec2)
+
+            # 2つの外積で作成したベクトルを合成し描画する。
+            # tim3_center_p_coordinate = tim3_center_crv.PointAt((t_ - t) / 2 + t)
+            add_vec = cross_vec1 + cross_vec2
+
+            # 接合部の直径を求めることにより、移動距離を決定する。
+            dis1, rp1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_start_point)
+            dis2, rp2 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_end_point)
+
+            # 移動距離を決定。
+            if dis1 >= dis2:
+                rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
+                rc.Unitize()
+                vec_move = rc * dis2
+                xf = Rhino.Geometry.Transform.Translation(vec_move)
+                tim3_srf.Transform(xf)
+                tim3_center_crv.Transform(xf)
+
+            else:
+                rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
+                rc.Unitize()
+                vec_move = rc * dis1
+                xf = Rhino.Geometry.Transform.Translation(vec_move)
+                tim3_srf.Transform(xf)
+                tim3_center_crv.Transform(xf)
+
+            tim3_end_p = tim3_center_crv.PointAtEnd
+            tim3_start_p = tim3_center_crv.PointAtStart
+
+            # ここで2つの端部の座標がマイナスになっていなければ処理を続行。マイナスならもう一度Domainの選択からやり直し
+            if tim3_end_p[2] > 100 and tim3_start_p[2] > 100:
                 break
-                # # 制約条件 ---> 接合なす角
-                # if select_domain_loop < 50:
-                #     p1 = tim1_center_crv.PointAt(domain_crv1[0])
-                #     p2 = tim1_center_crv.PointAt(domain_crv1[1])
-                #     p3 = tim2_center_crv.PointAt(domain_crv2[0])
-                #     p4 = tim2_center_crv.PointAt(domain_crv2[1])
-                #
-                #     v1 = p1 - p2
-                #     v2 = p3 - p4
-                #     v3 = tim1_point - tim2_point
-                #
-                #     v1_length = v1.Length
-                #     v2_length = v2.Length
-                #     v3_length = v3.Length
-                #
-                #     cos_theta1 = (v1*v3) / (v1_length*v3_length)
-                #     cos_theta2 = (v2*v3) / (v2_length*v3_length)
-                #
-                #     degree1 = math.degrees(math.acos(cos_theta1))
-                #     degree2 = math.degrees(math.acos(cos_theta2))
-                #
-                #     if limit_degree[0]<  degree1 < limit_degree[1]  and limit_degree[0]<  degree2 < limit_degree[1] :
-                #         # print("OK")
-                #         break
-                #     else:
-                #         # print("NO")
-                #         continue
-                # else:
-                #     break
-
-        # distance_betweenの距離よりもlength_tim3のほうが長かったとしても、EvaluateCurveで選択される点次第で長さが足りなくなることも十分に考えられるだろう。
-        # t = domain_crv3[0] + split_range*20
-        t = domain_crv3[0] + domain_range3 * select_domain_3_start
-        tim3_start_point_coordinate = tim3_center_crv.PointAt(t)
-
-        # distance_between と同じ長さとなるcrv3上のパラメータを取得。　点を加える。
-        t_ = domain_crv3[0]
-        flag_select = True
-        avoid_ = 0
-        while flag_select:
-            avoid_ = avoid_ + 1
-            t_ = t_ + split_range * 5  # ここを調整することでスピードを上げることができるはず。
-            tim3_end_point_coordinate = tim3_center_crv.PointAt(t_)  # RhinoCommon
-            distance = (tim3_end_point_coordinate - tim3_start_point_coordinate).Length  # RhinoCommon
-            if distance > distance_between:
-                break
-            if avoid_ > 100:
-                raise ValueError("infinite loop: select_domain_3_end")
-
-        # ObjectのMove
-        vec_move = tim1_point - tim3_start_point_coordinate  # RhinoCommon
-        # print("vec_move", vec_move)
-        xf = Rhino.Geometry.Transform.Translation(vec_move)
-        tim3_center_crv.Transform(xf)
-        tim3_srf.Transform(xf)
-
-        # 再計測
-        tim3_end_point = tim3_center_crv.PointAt(t_)
-        # tim3_start_point = tim3_center_crv.PointAt(t)
-
-        # print("tim3_end_point", tim3_end_point)
-        # print("tim3_start_point", tim3_start_point)
-
-        # 1回目のRotate
-        vec1 = tim1_point - tim3_end_point
-        vec2 = tim1_point - tim2_point
-        rotate_angle1 = oriRhino.VectorAngle_RhinoCommon(vec1, vec2)
-        plane1 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
-        xf = Rhino.Geometry.Transform.Rotation(rotate_angle1, plane1[3], tim1_point)
-        tim3_center_crv.Transform(xf)
-        tim3_srf.Transform(xf)
-
-        # 再計測
-        tim3_end_point = tim3_center_crv.PointAt(t_)
-        # tim3_start_point = tim3_center_crv.PointAt(t)
-
-        # 2回目のRotate
-        vec3 = tim3_end_point - tim1_point
-        vec4 = tim2_point - tim1_point
-        rotate_angle2 = oriRhino.VectorAngle_RhinoCommon(vec3, vec4)
-        plane2 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
-
-        if int(tim3_end_point[0]) - 10 <= int(tim2_point[0]) <= int(tim3_end_point[0]) + 10 or \
-                int(tim3_end_point[1]) - 10 <= int(tim2_point[1]) <= int(tim3_end_point[1] + 10 or \
-                                                                         int(tim3_end_point[2]) - 10 <= int(
-            tim2_point[2]) <= int(tim3_end_point[2])) + 10:  # TODO 範囲の式に書き換える。
-            pass
-        else:
-
-            xf = Rhino.Geometry.Transform.Rotation(rotate_angle2, plane2[3], tim1_point)
-            tim3_center_crv.Transform(xf)
-            tim3_srf.Transform(xf)
-
-        # 再計測
-        tim3_end_point = tim3_center_crv.PointAt(t_)
-        tim3_start_point = tim3_center_crv.PointAt(t)
-
-        # tim1とtim2のtim3にたいする外積をそれぞれ求める。
-        vec_tim3 = tim3_end_point - tim3_start_point
-        tim1_end_point = tim1_center_crv.PointAtEnd
-        vec_tim1 = tim1_end_point - tim1_point
-        tim2_end_point = tim2_center_crv.PointAtEnd
-
-        vec_tim2 = tim2_end_point - tim2_point
-
-        cross_vec1 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim1)
-        cross_vec2 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim2)
-        # cross_angle = oriRhino.VectorAngle_RhinoCommon(cross_vec1, cross_vec2)
-
-        # 2つの外積で作成したベクトルを合成し描画する。
-        # tim3_center_p_coordinate = tim3_center_crv.PointAt((t_ - t) / 2 + t)
-        add_vec = cross_vec1 + cross_vec2
-
-        # 接合部の直径を求めることにより、移動距離を決定する。
-        dis1, rp1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_start_point)
-        dis2, rp2 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_end_point)
-
-        # 移動距離を決定。
-        if dis1 >= dis2:
-            rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
-            rc.Unitize()
-            vec_move = rc * dis2
-            xf = Rhino.Geometry.Transform.Translation(vec_move)
-            tim3_srf.Transform(xf)
-            tim3_center_crv.Transform(xf)
-
-        else:
-            rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
-            rc.Unitize()
-            vec_move = rc * dis1
-            xf = Rhino.Geometry.Transform.Translation(vec_move)
-            tim3_srf.Transform(xf)
-            tim3_center_crv.Transform(xf)
+            else:
+                pass
 
         # # layerを変更して正しいレイヤーへ
         # a = 'tim'
@@ -782,6 +912,8 @@ class Generate:
                        limit_degree, generation_num, loop_num, between_draw_rhino):
         # start_time = time.time()
 
+        gl_distance = 0
+
         split_ = 200
         split_domain_range_num = 10
 
@@ -821,163 +953,182 @@ class Generate:
         domain_range2 = abs((domain_crv2[1] - domain_crv2[0]) / split_domain_range_num)
         domain_range3 = abs((domain_crv3[1] - domain_crv3[0]) / split_domain_range_num)
 
-        select_domain_3_start = 0  # TODO 今のところ固定値
-        for select_domain_loop in range(200):
-            select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
-            select_domain_2 = used_timber2.selectSurfaceDomain_2()
+        # GL Method
+        flag_gl_distance = False
+        for i in range(10):
 
-            # print("select_domain_1", select_domain_1)
-            # print("select_domain_2", select_domain_2)
+            select_domain_3_start = 0  # TODO 今のところ固定値
+            for select_domain_loop in range(200):
+                select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
+                select_domain_2 = used_timber2.selectSurfaceDomain_2()
 
-            # TODO　ドメインの指定に関しては範囲内をランダムにする、中心線を単純にするなどによって精度を向上させること可能。
-            tim1_point = tim1_center_crv.PointAt(domain_crv1[0] + domain_range1 * select_domain_1)
-            tim2_point = tim2_center_crv.PointAt(domain_crv2[0] + domain_range2 * select_domain_2)
+                # print("select_domain_1", select_domain_1)
+                # print("select_domain_2", select_domain_2)
 
-            # tim1, tim2間の点と点の長さを取得する
-            distance_between = (tim1_point - tim2_point).Length
+                # TODO　ドメインの指定に関しては範囲内をランダムにする、中心線を単純にするなどによって精度を向上させること可能。
+                tim1_point = tim1_center_crv.PointAt(domain_crv1[0] + domain_range1 * select_domain_1)
+                tim2_point = tim2_center_crv.PointAt(domain_crv2[0] + domain_range2 * select_domain_2)
 
-            # bridge可能か判断　その２
-            length_tim3 = tim3_center_crv.GetLength() - tim3_center_crv.GetLength() / split_domain_range_num * 2
-            if distance_between > length_tim3 - (length_tim3/10)* 4:
-                if select_domain_loop == 199:
-                    return False
+                # tim1, tim2間の点と点の長さを取得する
+                distance_between = (tim1_point - tim2_point).Length
 
+                # bridge可能か判断　その２
+                length_tim3 = tim3_center_crv.GetLength() - tim3_center_crv.GetLength() / split_domain_range_num * 2
+                if distance_between > length_tim3 - (length_tim3/10)* 4:
+                    if select_domain_loop == 199:
+                        return False
+
+                    else:
+                        continue
                 else:
-                    continue
+                    break
+                    # # 制約条件 ---> 接合なす角
+                    # if select_domain_loop < 50:
+                    #     p1 = tim1_center_crv.PointAt(domain_crv1[0])
+                    #     p2 = tim1_center_crv.PointAt(domain_crv1[1])
+                    #     p3 = tim2_center_crv.PointAt(domain_crv2[0])
+                    #     p4 = tim2_center_crv.PointAt(domain_crv2[1])
+                    #
+                    #     v1 = p1 - p2
+                    #     v2 = p3 - p4
+                    #     v3 = tim1_point - tim2_point
+                    #
+                    #     v1_length = v1.Length
+                    #     v2_length = v2.Length
+                    #     v3_length = v3.Length
+                    #
+                    #     cos_theta1 = (v1*v3) / (v1_length*v3_length)
+                    #     cos_theta2 = (v2*v3) / (v2_length*v3_length)
+                    #
+                    #     degree1 = math.degrees(math.acos(cos_theta1))
+                    #     degree2 = math.degrees(math.acos(cos_theta2))
+                    #
+                    #     if limit_degree[0]<  degree1 < limit_degree[1]  and limit_degree[0]<  degree2 < limit_degree[1] :
+                    #         # print("OK")
+                    #         break
+                    #     else:
+                    #         # print("NO")
+                    #         continue
+                    # else:
+                    #     break
+
+            # distance_betweenの距離よりもlength_tim3のほうが長かったとしても、EvaluateCurveで選択される点次第で長さが足りなくなることも十分に考えられるだろう。
+            # t = domain_crv3[0] + split_range*20
+            t = domain_crv3[0] + domain_range3 * select_domain_3_start
+            tim3_start_point_coordinate = tim3_center_crv.PointAt(t)
+
+            # distance_between と同じ長さとなるcrv3上のパラメータを取得。　点を加える。
+            t_ = domain_crv3[0]
+            flag_select = True
+            avoid_ = 0
+            while flag_select:
+                avoid_ = avoid_ + 1
+                t_ = t_ + split_range * 5  # ここを調整することでスピードを上げることができるはず。
+                tim3_end_point_coordinate = tim3_center_crv.PointAt(t_)  # RhinoCommon
+                distance = (tim3_end_point_coordinate - tim3_start_point_coordinate).Length  # RhinoCommon
+                if distance > distance_between:
+                    break
+                if avoid_ > 100:
+                    input("infinite loop: select_domain_3_end")
+
+            # ObjectのMove
+            vec_move = tim1_point - tim3_start_point_coordinate  # RhinoCommon
+            # print("vec_move", vec_move)
+            xf = Rhino.Geometry.Transform.Translation(vec_move)
+            tim3_center_crv.Transform(xf)
+            tim3_srf.Transform(xf)
+
+            # 再計測
+            tim3_end_point = tim3_center_crv.PointAt(t_)
+            # tim3_start_point = tim3_center_crv.PointAt(t)
+
+            # print("tim3_end_point", tim3_end_point)
+            # print("tim3_start_point", tim3_start_point)
+
+            # 1回目のRotate
+            vec1 = tim1_point - tim3_end_point
+            vec2 = tim1_point - tim2_point
+            rotate_angle1 = oriRhino.VectorAngle_RhinoCommon(vec1, vec2)
+            plane1 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
+            xf = Rhino.Geometry.Transform.Rotation(rotate_angle1, plane1[3], tim1_point)
+            tim3_center_crv.Transform(xf)
+            tim3_srf.Transform(xf)
+
+            # 再計測
+            tim3_end_point = tim3_center_crv.PointAt(t_)
+            # tim3_start_point = tim3_center_crv.PointAt(t)
+
+            # 2回目のRotate
+            vec3 = tim3_end_point - tim1_point
+            vec4 = tim2_point - tim1_point
+            rotate_angle2 = oriRhino.VectorAngle_RhinoCommon(vec3, vec4)
+            plane2 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
+
+            if int(tim3_end_point[0]) - 10 <= int(tim2_point[0]) <= int(tim3_end_point[0]) + 10 or \
+                    int(tim3_end_point[1]) - 10 <= int(tim2_point[1]) <= int(tim3_end_point[1] + 10 or \
+                                                                             int(tim3_end_point[2]) - 10 <= int(
+                tim2_point[2]) <= int(tim3_end_point[2])) + 10:  # TODO 範囲の式に書き換える。
+                pass
             else:
+
+                xf = Rhino.Geometry.Transform.Rotation(rotate_angle2, plane2[3], tim1_point)
+                tim3_center_crv.Transform(xf)
+                tim3_srf.Transform(xf)
+
+            # 再計測
+            tim3_end_point = tim3_center_crv.PointAt(t_)
+            tim3_start_point = tim3_center_crv.PointAt(t)
+
+            # tim1とtim2のtim3にたいする外積をそれぞれ求める。
+            vec_tim3 = tim3_end_point - tim3_start_point
+            tim1_end_point = tim1_center_crv.PointAtEnd
+            vec_tim1 = tim1_end_point - tim1_point
+            tim2_end_point = tim2_center_crv.PointAtEnd
+            vec_tim2 = tim2_end_point - tim2_point
+
+            cross_vec1 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim1)
+            cross_vec2 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim2)
+            # cross_angle = oriRhino.VectorAngle_RhinoCommon(cross_vec1, cross_vec2)
+
+            # 2つの外積で作成したベクトルを合成し描画する。
+            # tim3_center_p_coordinate = tim3_center_crv.PointAt((t_ - t) / 2 + t)
+            add_vec = cross_vec1 + cross_vec2
+
+            # 接合部の直径を求めることにより、移動距離を決定する。
+            dis1, rp1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_start_point)
+            dis2, rp2 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_end_point)
+
+            # 移動距離を決定。
+            if dis1 >= dis2:
+                rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
+                rc.Unitize()
+                vec_move = rc * dis2
+                xf = Rhino.Geometry.Transform.Translation(vec_move)
+                tim3_srf.Transform(xf)
+                tim3_center_crv.Transform(xf)
+
+            else:
+                rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
+                rc.Unitize()
+                vec_move = rc * dis1
+                xf = Rhino.Geometry.Transform.Translation(vec_move)
+                tim3_srf.Transform(xf)
+                tim3_center_crv.Transform(xf)
+
+            end_p = tim3_center_crv.PointAtEnd
+            start_p = tim3_center_crv.PointAtStart
+
+            if end_p[2] > gl_distance and start_p[2] > gl_distance:
+                flag_gl_distance = True
                 break
-                # # 制約条件 ---> 接合なす角
-                # if select_domain_loop < 50:
-                #     p1 = tim1_center_crv.PointAt(domain_crv1[0])
-                #     p2 = tim1_center_crv.PointAt(domain_crv1[1])
-                #     p3 = tim2_center_crv.PointAt(domain_crv2[0])
-                #     p4 = tim2_center_crv.PointAt(domain_crv2[1])
-                #
-                #     v1 = p1 - p2
-                #     v2 = p3 - p4
-                #     v3 = tim1_point - tim2_point
-                #
-                #     v1_length = v1.Length
-                #     v2_length = v2.Length
-                #     v3_length = v3.Length
-                #
-                #     cos_theta1 = (v1*v3) / (v1_length*v3_length)
-                #     cos_theta2 = (v2*v3) / (v2_length*v3_length)
-                #
-                #     degree1 = math.degrees(math.acos(cos_theta1))
-                #     degree2 = math.degrees(math.acos(cos_theta2))
-                #
-                #     if limit_degree[0]<  degree1 < limit_degree[1]  and limit_degree[0]<  degree2 < limit_degree[1] :
-                #         # print("OK")
-                #         break
-                #     else:
-                #         # print("NO")
-                #         continue
-                # else:
-                #     break
+            else:
+                continue
 
-        # distance_betweenの距離よりもlength_tim3のほうが長かったとしても、EvaluateCurveで選択される点次第で長さが足りなくなることも十分に考えられるだろう。
-        # t = domain_crv3[0] + split_range*20
-        t = domain_crv3[0] + domain_range3 * select_domain_3_start
-        tim3_start_point_coordinate = tim3_center_crv.PointAt(t)
-
-        # distance_between と同じ長さとなるcrv3上のパラメータを取得。　点を加える。
-        t_ = domain_crv3[0]
-        flag_select = True
-        avoid_ = 0
-        while flag_select:
-            avoid_ = avoid_ + 1
-            t_ = t_ + split_range * 5  # ここを調整することでスピードを上げることができるはず。
-            tim3_end_point_coordinate = tim3_center_crv.PointAt(t_)  # RhinoCommon
-            distance = (tim3_end_point_coordinate - tim3_start_point_coordinate).Length  # RhinoCommon
-            if distance > distance_between:
-                break
-            if avoid_ > 100:
-                input("infinite loop: select_domain_3_end")
-
-        # ObjectのMove
-        vec_move = tim1_point - tim3_start_point_coordinate  # RhinoCommon
-        # print("vec_move", vec_move)
-        xf = Rhino.Geometry.Transform.Translation(vec_move)
-        tim3_center_crv.Transform(xf)
-        tim3_srf.Transform(xf)
-
-        # 再計測
-        tim3_end_point = tim3_center_crv.PointAt(t_)
-        # tim3_start_point = tim3_center_crv.PointAt(t)
-
-        # print("tim3_end_point", tim3_end_point)
-        # print("tim3_start_point", tim3_start_point)
-
-        # 1回目のRotate
-        vec1 = tim1_point - tim3_end_point
-        vec2 = tim1_point - tim2_point
-        rotate_angle1 = oriRhino.VectorAngle_RhinoCommon(vec1, vec2)
-        plane1 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
-        xf = Rhino.Geometry.Transform.Rotation(rotate_angle1, plane1[3], tim1_point)
-        tim3_center_crv.Transform(xf)
-        tim3_srf.Transform(xf)
-
-        # 再計測
-        tim3_end_point = tim3_center_crv.PointAt(t_)
-        # tim3_start_point = tim3_center_crv.PointAt(t)
-
-        # 2回目のRotate
-        vec3 = tim3_end_point - tim1_point
-        vec4 = tim2_point - tim1_point
-        rotate_angle2 = oriRhino.VectorAngle_RhinoCommon(vec3, vec4)
-        plane2 = Rhino.Geometry.Plane(tim1_point, tim3_end_point, tim2_point)
-
-        if int(tim3_end_point[0]) - 10 <= int(tim2_point[0]) <= int(tim3_end_point[0]) + 10 or \
-                int(tim3_end_point[1]) - 10 <= int(tim2_point[1]) <= int(tim3_end_point[1] + 10 or \
-                                                                         int(tim3_end_point[2]) - 10 <= int(
-            tim2_point[2]) <= int(tim3_end_point[2])) + 10:  # TODO 範囲の式に書き換える。
+        if flag_gl_distance:
             pass
         else:
-
-            xf = Rhino.Geometry.Transform.Rotation(rotate_angle2, plane2[3], tim1_point)
-            tim3_center_crv.Transform(xf)
-            tim3_srf.Transform(xf)
-
-        # 再計測
-        tim3_end_point = tim3_center_crv.PointAt(t_)
-        tim3_start_point = tim3_center_crv.PointAt(t)
-
-        # tim1とtim2のtim3にたいする外積をそれぞれ求める。
-        vec_tim3 = tim3_end_point - tim3_start_point
-        tim1_end_point = tim1_center_crv.PointAtEnd
-        vec_tim1 = tim1_end_point - tim1_point
-        tim2_end_point = tim2_center_crv.PointAtEnd
-        vec_tim2 = tim2_end_point - tim2_point
-
-        cross_vec1 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim1)
-        cross_vec2 = Rhino.Geometry.Vector3d.CrossProduct(vec_tim3, vec_tim2)
-        # cross_angle = oriRhino.VectorAngle_RhinoCommon(cross_vec1, cross_vec2)
-
-        # 2つの外積で作成したベクトルを合成し描画する。
-        # tim3_center_p_coordinate = tim3_center_crv.PointAt((t_ - t) / 2 + t)
-        add_vec = cross_vec1 + cross_vec2
-
-        # 接合部の直径を求めることにより、移動距離を決定する。
-        dis1, rp1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_start_point)
-        dis2, rp2 = oriRhino.GetTimberSectionLength_RhinoCommon(tim3_srf, tim3_end_point)
-
-        # 移動距離を決定。
-        if dis1 >= dis2:
-            rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
-            rc.Unitize()
-            vec_move = rc * dis2
-            xf = Rhino.Geometry.Transform.Translation(vec_move)
-            tim3_srf.Transform(xf)
-            tim3_center_crv.Transform(xf)
-
-        else:
-            rc = Rhino.Geometry.Vector3d(add_vec.X, add_vec.Y, add_vec.Z)
-            rc.Unitize()
-            vec_move = rc * dis1
-            xf = Rhino.Geometry.Transform.Translation(vec_move)
-            tim3_srf.Transform(xf)
-            tim3_center_crv.Transform(xf)
+            print('GL distance is not satisfied')
+            return False
 
         if generation_num - 1 == loop_num:
             if self.flag_layer_change:

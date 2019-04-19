@@ -106,7 +106,7 @@ class Timber:
             else:
                 select_domain = rnd.randint(1, 7)
 
-    #サーフェスのドメインを選択する --> 変更の余地あり  select_domain_list change ver
+    # サーフェスのドメインを選択する --> 変更の余地あり  select_domain_list change ver
     def selectSurfaceDomain_1(self, select_num=None):
 
         selected_domain = []
@@ -167,6 +167,7 @@ class Timber:
                 return select_domain
             if count > 100:
                 # print("select_used_domain cuz all domains are used")
+                # raise Exception('domain is not selected cuz all domain is used')
                 return select_domain
 
     # サーフェスから制限範囲内のある一点のuパラメータを取得する
