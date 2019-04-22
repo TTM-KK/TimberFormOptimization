@@ -379,10 +379,15 @@ for main_loop in range(generation_num):
         # print("check temp timber partner : %s" % (check_timber_partner2))
         # print("list_temp_partner_tim", list_temp_partner_tim)
 
+        regenerate_start = time.time()
         # 再生成のプロセス
         ReGenerate.regenerate(already_regenerate, yet_regenerate, pop_1, pop_2, num_timber, limit_degree,
                               generation_num, main_loop, loop, between_draw_rhino, list_temp_partner_tim,
                               mutation_ratio)
+        regenerate_end = time.time()
+        regenerate_time = regenerate_end - regenerate_start
+
+        print("Regenerate Time: {0}  Pop No.{1} Generation {2}".format(regenerate_time, loop, main_loop))
 
         # TODO 再生成した個体がバラバラに成っていないか確認するアルゴリズムを記述する。
         t1_flag_divede = time.time()
