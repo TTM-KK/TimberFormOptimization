@@ -1374,7 +1374,7 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
 
         for k in range(150):
 
-            # パートナーが最小の部材から順に再生成を試みる。
+            # パートナーが最小の部材から順に再生成を試みる。できないならランダムに
             partner_num = []
             for l in range(len(already_regenerate_id)):
                 tim_id = already_regenerate_id[l]
@@ -1391,9 +1391,19 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
             #     select_tim_index = partner_num.index(min(partner_num) + 2)
             # elif k > 80:
             #     raise ValueError('not working well, RegenerateRandomPrioritySmallPartner method in Regenerate')
-            if k > 100:
+            if 100 >= k > 50:
                 tim_index = [i for i, x in enumerate(partner_num) if x == min(partner_num) + 1]
-                tim2_select_index = rnd.choice(tim_index)
+                if tim_index:
+                    tim2_select_index = rnd.choice(tim_index)
+                else:
+                    tim_index = [i for i, x in enumerate(partner_num) if x == min(partner_num) + 2]
+                    if tim_index:
+                        tim2_select_index = rnd.choice(tim_index)
+                    else:
+                        tim2_select_index = rnd.randint(0, len(already_regenerate_id) - 1)
+
+            elif k > 100:
+                tim2_select_index = rnd.randint(0, len(already_regenerate_id) - 1)
 
             tim2_name = already_regenerate_id[tim2_select_index]
 

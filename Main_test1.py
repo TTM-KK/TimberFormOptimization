@@ -178,7 +178,7 @@ print("init generation time: %s" % init_generation_time)
 for i in range(pop_num):
     pop = dic['generate' + str(i)]
     flag_divide = GA.Method.confirm_pop_divide(num_timber, pop)
-    print("flag_divide : %s  Time: %s" % flag_divide)
+    print("flag_divide : %s  Time: '{0}'".format(flag_divide))
 
 
 # Rhinoに描画されるオブジェクとに置き換える。
@@ -229,7 +229,8 @@ for main_loop in range(generation_num):
         # evaluate_value = GA.Evaluation.overlap_num2(num_timber, instance_pop)
         # evaluate_value = GA.Evaluation.partner_num_evaluate(num_timber, instance_pop, 2, 10)
         # evaluate_value = GA.Evaluation.pop_height_evaluate(num_timber, instance_pop)
-        evaluate_value = GA.Evaluation.pop_evaluation(num_timber, instance_pop)
+        evaluate_value = GA.Evaluation.pop_evaluation(num_timber, instance_pop, main_loop, generate_range,
+                                                      generation_num)
 
         dic['generate' + str(i)].evaluation = evaluate_value
         evaluation_value.append(dic['generate' + str(i)].evaluation)
@@ -498,7 +499,8 @@ for i in range(pop_num):
 
     # evaluate_value = GA.Evaluation.overlap_num2(num_timber, instance_pop)
     # evaluate_value = GA.Evaluation.partner_num_evaluate(num_timber, instance_pop, 2, 3)
-    evaluate_value = GA.Evaluation.pop_evaluation(num_timber, instance_pop)
+    evaluate_value = GA.Evaluation.pop_evaluation(num_timber, instance_pop, generation_num, generate_range,
+                                                  generation_num)
 
     dic['generate' + str(i)].evaluation = evaluate_value
 
