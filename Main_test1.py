@@ -219,6 +219,12 @@ for i in range(pop_num):
 # Main Loop 開始
 for main_loop in range(generation_num):
 
+    main_loop_start = time.time()
+    if main_loop == 0:
+        pass
+    else:
+        print('Generate Time: {0}'.format(main_loop_end - main_loop_start))
+
     # Step6:  # EVALUATION　評価
     evaluation_value = []  # 一世代分の評価値を格納するリスト
     t3 = time.time()
@@ -495,6 +501,8 @@ for main_loop in range(generation_num):
             dic['generate' + str(i)].used_list[j].select_domain_list = []
             dic['generate' + str(i)].used_list[j].select_domain_list.extend(
                 temp_list_select_domain_list_for_next_generation[i][dic['generate' + str(i)].used_list[j].name])
+
+    main_loop_end = time.time()
 
 # Step10:  EVALUATION
 evaluation_value = []

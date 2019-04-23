@@ -126,7 +126,6 @@ class Timber:
         # 接触部が2つの時
         elif len(self.select_domain_list) == 2 and select_num is None:
 
-
             if 4 in selected_domain and 7 in selected_domain:
                 select_domain = 1
             elif 4 in selected_domain and 1 in selected_domain:

@@ -20,17 +20,19 @@ import GA.Method
 import ReGenerate
 
 
-num_timber = 20         # timberの総本数
+num_timber = 10         # timberの総本数
 divide_range = 2        # 次世代に継承する材の最低本数を指定
-num_base_timber = 10
-cantilever_num = 1      # 初期生成時の全体の中でのcantileverの数
-pop_num = 1             # 初期個体数。世代ごとの個体数　ttm add 181003
+num_base_timber = 5
+cantilever_num = 2      # 初期生成時の全体の中でのcantileverの数
+bridge_num = 3
+
+pop_num = 4             # 初期個体数。世代ごとの個体数　ttm add 181003
 elite_num = 1           # エリート選択における選択数。
 generation_num = 3      # 世代数
 tournament_size = 3     # トーナメントサイズ
 tournament_num = 1      # トーナメント選択の回数
 mutation_ratio = 3      # 突然変異の確率
-initial_population_draw = False
+initial_population_draw = True
 flag_high = True        # ソート昇順の場合True　降順の場合False
 
 connect_count = 10      # 接合制約数
@@ -139,12 +141,12 @@ t2 = time.time()
 print("time:%s" % (t2 - t1))
 
 
-for i in range(5):
+for i in range(cantilever_num):
     flag_success = dic['generate' + str(0)].cantilever(limit_degree)
     if not flag_success:
         raise Exception('cantilever fail')
 
-for i in range(5):
+for i in range(bridge_num):
     flag_success = dic['generate' + str(0)].bridge(limit_degree)
 
     if not flag_success:

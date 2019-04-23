@@ -2,7 +2,7 @@
 
 import random as rnd
 # import copy
-# import rhinoscriptsyntax as rs
+import rhinoscriptsyntax as rs
 # import Rhino
 # import scriptcontext
 
@@ -1372,7 +1372,7 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
                 tim1_index = j
                 break
 
-        for k in range(150):
+        for k in range(1000):
 
             # パートナーが最小の部材から順に再生成を試みる。できないならランダムに
             partner_num = []
