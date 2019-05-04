@@ -310,8 +310,8 @@ for main_loop in range(generation_num):
         already_regenerate = GA.Crossover.TwoPointCrossover(num_timber, pop_1, pop_2, divide_point1, divide_point2,
                                                             list_temp_gene_tim)
 
-        # pop_2に関して継承する材を決定するアルゴリズム add
-        decide_inheritance_num_list, connect_list = GA.Method.DecideInheritanceTimber(pop_1, pop_2, already_regenerate,
+        # pop_2に関して継承する材を決定するアルゴリズム add　TODO　ここの関数を変更することによって継承する材を変更することができる
+        decide_inheritance_num_list, connect_list = GA.Method.decide_inheritance_timber(pop_1, pop_2, already_regenerate,
                                                                                       generate_range)
         # print('\n')
         # print('connect_list', connect_list)
@@ -338,12 +338,14 @@ for main_loop in range(generation_num):
         # print('inheritance form 2', decide_inheritance_num_list)
 
         # そのまま継承する材をMoveObjectでコピー、partnerを更新する
-        GA.Method.MovePopulationUpdate(already_regenerate, pop_1, generate_range, generation_num, between_draw_rhino,
+        GA.Method.move_and_pop_update_for_already(already_regenerate, pop_1, generate_range, generation_num, between_draw_rhino,
                                        main_loop, loop, list_temp_partner_tim)
 
         # そのまま継承する材をMoveObjectでコピーし、partnerを更新する。　add 190220
-        GA.Method.MovePopulationUpdate2(decide_inheritance_num_list, pop_1, pop_2, generate_range, generation_num,
+        GA.Method.move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_1, pop_2, generate_range, generation_num,
                                         between_draw_rhino, main_loop, loop, list_temp_partner_tim)
+
+        # TODO ここに接合部を最適化させる関数を配置する。
 
         # pop_2の材の位相関係を継承しながら再生成を行う。
         for i in range(len(connect_list)):
@@ -386,12 +388,12 @@ for main_loop in range(generation_num):
                     break
 
         # partner_timの更新確認
-        check_timber_partner2 = []
-        for i in range(num_timber):
-            for j in range(num_timber):
-                if pop_1.used_list[j].name == i:
-                    check_timber_partner2.append(pop_1.used_list[j].partner_tim)
-                    break
+        # check_timber_partner2 = []
+        # for i in range(num_timber):
+        #     for j in range(num_timber):
+        #         if pop_1.used_list[j].name == i:
+        #             check_timber_partner2.append(pop_1.used_list[j].partner_tim)
+        #             break
         # print("check temp timber partner : %s" % (check_timber_partner2))
         # print("list_temp_partner_tim", list_temp_partner_tim)
 
@@ -400,11 +402,10 @@ for main_loop in range(generation_num):
                               generation_num, main_loop, loop, between_draw_rhino, list_temp_partner_tim,
                               mutation_ratio)
 
-        # TODO 再生成した個体がバラバラに成っていないか確認するアルゴリズムを記述する。
+        # 再生成した個体がバラバラに成っていないか確認する
         t1_flag_divede = time.time()
         flag_divide = GA.Method.confirm_pop_divide(num_timber, pop_1)
         t2_flag_divide = time.time()
-
         print("flag_divide : %s  Time: %s" % (flag_divide, t2_flag_divide-t1_flag_divede))
 
         # partner_timの確認

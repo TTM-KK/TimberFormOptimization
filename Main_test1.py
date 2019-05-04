@@ -20,15 +20,15 @@ import GA.Crossover
 import GA.Method
 import ReGenerate
 
-num_timber = 20  # timberの総本数
-num_base_timber = 10
-cantilever_num = 5  # 初期生成時の全体の中でのcantileverの数
-bridge_num = 5
+num_timber = 10  # timberの総本数
+num_base_timber = 3
+cantilever_num = 3  # 初期生成時の全体の中でのcantileverの数
+bridge_num = 4
 
-divide_range = 5  # 次世代に継承する材の最低本数を指定
+divide_range = 3  # 次世代に継承する材の最低本数を指定
 pop_num = 5  # 初期個体数。世代ごとの個体数　ttm add 181003
 elite_num = 1  # エリート選択における選択数。
-generation_num = 5  # 世代数
+generation_num = 10  # 世代数
 tournament_size = 2  # トーナメントサイズ
 tournament_num = 1  # トーナメント選択の回数
 mutation_ratio = 3  # 突然変異の確率
@@ -200,20 +200,20 @@ print("init generation time: %s" % init_generation_time)
 
 
 # Step5: 遺伝子情報を生成し、Generateクラスのgene_infoにappendする。
-all_gene_info = []
-for i in range(pop_num):
-    gene_info = []
-    for j in range(num_timber):
-        gene_info.append(dic['generate' + str(i)].used_list[j].name)
-    all_gene_info.append(gene_info)
-
-if information_flag:
-    print("\n")
-    print("All gene info", all_gene_info)
-
-for i in range(pop_num):
-    for j in range(num_timber):
-        dic['generate' + str(i)].gene_info.append(dic['generate' + str(i)].used_list[j].name)
+# all_gene_info = []
+# for i in range(pop_num):
+#     gene_info = []
+#     for j in range(num_timber):
+#         gene_info.append(dic['generate' + str(i)].used_list[j].name)
+#     all_gene_info.append(gene_info)
+#
+# if information_flag:
+#     print("\n")
+#     print("All gene info", all_gene_info)
+#
+# for i in range(pop_num):
+#     for j in range(num_timber):
+#         dic['generate' + str(i)].gene_info.append(dic['generate' + str(i)].used_list[j].name)
 
 
 # Main Loop 開始
@@ -266,7 +266,7 @@ for main_loop in range(generation_num):
     temp_list_srf_for_next_generation = [[[] for i in range(num_timber)] for j in range(pop_num)]
     temp_list_select_domain_list_for_next_generation = [[[] for i in range(num_timber)] for j in range(pop_num)]
     list_temp_partner_tim = [[[] for i in range(num_timber)] for j in range(pop_num)]  # partner_tim更新用のリストを作成
-    list_temp_gene_tim = []  # 次世代の遺伝子更新用リスト
+    # list_temp_gene_tim = []  # 次世代の遺伝子更新用リスト
 
     # 前世代のpartner_timを保存する。
     list_partner_tim_prior_generation = [[[] for i in range(num_timber)] for j in range(pop_num)]  # 前世代のpartner_timを保存。
@@ -285,17 +285,17 @@ for main_loop in range(generation_num):
             print("------------------------------------------------------------")
 
         # decide the 2 crossover point
-        divide_point1, divide_point2 = GA.Crossover.selectDividePoints(num_timber, divide_range)
+        # divide_point1, divide_point2 = GA.Crossover.selectDividePoints(num_timber, divide_range)
 
         # Get the index in the 'selected_list' of the individual used for crossover
         pop_1, pop_2 = GA.Crossover.select2Poplation(selected_list)
 
         # 2点交叉　Generateクラス変数の更新とlist_temp_gene_timに新しく生成した遺伝子情報をappendする。 継承する材の番号が格納されたリストをreturnする
-        already_regenerate = GA.Crossover.TwoPointCrossover(num_timber, pop_1, pop_2, divide_point1, divide_point2,
-                                                            list_temp_gene_tim)
+        # already_regenerate = GA.Crossover.two_point_crossover(num_timber, divide_range, pop_1, pop_2)
+        already_regenerate = GA.Crossover.random_chunk_crossover(num_timber, divide_range, pop_1)
 
         # pop_2に関して継承する材を決定するアルゴリズム add
-        decide_inheritance_num_list, connect_list = GA.Method.DecideInheritanceTimber(pop_1, pop_2, already_regenerate,
+        decide_inheritance_num_list, connect_list = GA.Method.decide_inheritance_tim_connected(pop_1, pop_2, already_regenerate,
                                                                                       generate_range)
         # print('\n')
         # print('connect_list', connect_list)
@@ -322,33 +322,38 @@ for main_loop in range(generation_num):
         # print('inheritance form 2', decide_inheritance_num_list)
 
         # そのまま継承する材をMoveObjectでコピー、partnerを更新する
-        GA.Method.MovePopulationUpdate(already_regenerate, pop_1, generate_range, generation_num, between_draw_rhino,
+        GA.Method.move_and_pop_update_for_already(already_regenerate, pop_1, generate_range, generation_num, between_draw_rhino,
                                        main_loop, loop, list_temp_partner_tim)
 
         # そのまま継承する材をMoveObjectでコピーし、partnerを更新する。　add 190220
-        GA.Method.MovePopulationUpdate2(decide_inheritance_num_list, pop_1, pop_2, generate_range, generation_num,
+        GA.Method.move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_1, pop_2, generate_range, generation_num,
                                         between_draw_rhino, main_loop, loop, list_temp_partner_tim)
 
         # pop_2の材の位相関係を継承しながら再生成を行う。
-        for i in range(len(connect_list)):
-            index = decide_inheritance_num_list.index(connect_list[i][0])
-            del decide_inheritance_num_list[index]
-            already_regenerate.append(connect_list[i][0])
+        # for i in range(len(connect_list)):
+        #     index = decide_inheritance_num_list.index(connect_list[i][0])
+        #     del decide_inheritance_num_list[index]
+        #     already_regenerate.append(connect_list[i][0])
         # print('check del inheritance form', decide_inheritance_num_list)
 
         already_regenerate.extend(decide_inheritance_num_list)  # add 190220
         # print('check already_regenerate', already_regenerate)
         # print("already_regenerate_list : %s"%(already_regenerate))
-        for i in range(len(connect_list)):
-            decide_inheritance_num_list.append(connect_list[i][0])
+        # for i in range(len(connect_list)):
+        #     decide_inheritance_num_list.append(connect_list[i][0])
 
         yet_regenerate = []
-        yet_regenerate.extend(pop_1.temp_yet_regenerate)
+        for i in range(num_timber):
+            if i in already_regenerate:
+                pass
+            else:
+                yet_regenerate.append(i)
+        # yet_regenerate.extend(pop_1.temp_yet_regenerate)
 
         # print("before yet_regenerate_list : %s"%(yet_regenerate))  # add 190220
-        for ex in range(len(decide_inheritance_num_list)):
-            index_ex = yet_regenerate.index(decide_inheritance_num_list[ex])
-            yet_regenerate.pop(index_ex)
+        # for ex in range(len(decide_inheritance_num_list)):
+        #     index_ex = yet_regenerate.index(decide_inheritance_num_list[ex])
+        #     yet_regenerate.pop(index_ex)
         # print("after yet_regenerate_list : %s" % (yet_regenerate))
 
         # partner_timの確認　check_timber_partner3と一致している必要がある。
@@ -479,10 +484,10 @@ for main_loop in range(generation_num):
                     dic['generate' + str(i)].used_list[j].tim_distance[dic['generate' + str(i)].used_list[j].name] = []
                     continue
 
-    # gene_information の更新
-    for i in range(pop_num):
-        dic['generate' + str(i)].gene_info = []
-        dic['generate' + str(i)].gene_info.extend(list_temp_gene_tim[i])
+    # # gene_information の更新
+    # for i in range(pop_num):
+    #     dic['generate' + str(i)].gene_info = []
+    #     dic['generate' + str(i)].gene_info.extend(list_temp_gene_tim[i])
 
     # select_domain_listの更新
     for i in range(pop_num):
