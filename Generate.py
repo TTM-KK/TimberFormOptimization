@@ -27,8 +27,6 @@ class Generate:
         self.timber_list = []  # まだ使用していないtimberのリスト
         self.used_list = []  # 使用したtimberのリスト
         self.not_use_list = []  # 制約を満たした使用しないtimberリスト
-        self.count_cantilever = 0  # 生成の中で片持ちを行った回数
-        self.count_bridge = 0  # 生成の中で掛けるを行った回数
 
         self.init_used_list = []
         self.mark_line_list = None  # two mark line
@@ -51,9 +49,9 @@ class Generate:
             self.timber_list.append(timber)  # timber_listに追加
 
             # 中心線の長さを取得する
-            timber.mesureLength_RhinoCommon()
-            timber.mesureSectionLength()
-            timber.initDistance(self.num_all_timber)
+            timber.measure_length()
+            timber.measure_section_length()
+            timber.init_tim_distance(self.num_all_timber)
 
     def generate_ground_init(self, generate_range, objects_curve=None, objects_point=None):
         """
@@ -213,8 +211,8 @@ class Generate:
             each_domain_length1 = (domain_crv1[1] - domain_crv1[0]) / divide_domain_num
             each_domain_length2 = (domain_crv2[1] - domain_crv2[0]) / divide_domain_num
 
-            select_domain1 = used_timber.selectSurfaceDomain_2()
-            select_domain2 = unused_timber.selectSurfaceDomain_2()
+            select_domain1 = used_timber.select_surface_domain()
+            select_domain2 = unused_timber.select_surface_domain()
 
             # select_domain1 = 2
             # select_domain2 = rnd.randint(0, 9)
@@ -361,13 +359,13 @@ class Generate:
         # used_timber.center_line = cr2
 
         # domainの更新
-        used_timber.select_domain_list.append([select_domain1, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain2, used_timber.name])
+        used_timber.select_domain_list.append([select_domain1, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain2, used_timber.id])
 
         # 接合した相手の木材のIDを格納。
-        used_timber.partner_tim.append(unused_timber.name)
+        used_timber.partner_tim.append(unused_timber.id)
         if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber.name)
+            unused_timber.partner_tim.append(used_timber.id)
         else:
             raise ValueError("unused_timber partner must to be [].")
 
@@ -388,7 +386,6 @@ class Generate:
             self.used_list.append(unused_timber)
             self.timber_list.pop(y)
 
-        self.count_cantilever = self.count_cantilever + 1
 
         # end_time = time.time()
         # print("Processing Cantilever_RhinoCommon Time : %s" % (end_time - start_time))
@@ -425,8 +422,8 @@ class Generate:
         each_domain_length1 = (domain_crv1[1] - domain_crv1[0]) / divide_domain_num
         each_domain_length2 = (domain_crv2[1] - domain_crv2[0]) / divide_domain_num
 
-        select_domain1 = used_timber.selectSurfaceDomain_2()
-        select_domain2 = unused_timber.selectSurfaceDomain_2()
+        select_domain1 = used_timber.select_surface_domain()
+        select_domain2 = unused_timber.select_surface_domain()
 
         # select_domain1 = 2
         # select_domain2 = rnd.randint(0, 9)
@@ -549,7 +546,7 @@ class Generate:
         if generation_num - 1 == loop_num:
             if self.flag_layer_change:
                 a = 'tim'
-                b = str(unused_timber.name)
+                b = str(unused_timber.id)
                 # print("unused_timber.name", unused_timber.name)
                 rs.CurrentLayer(a + b)
 
@@ -575,24 +572,24 @@ class Generate:
         # unused_timber.center_line = tim2_srf
 
         # domainの更新
-        used_timber.select_domain_list.append([select_domain1, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain2, used_timber.name])
+        used_timber.select_domain_list.append([select_domain1, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain2, used_timber.id])
 
         # partnerの更新
-        if unused_timber.name in used_timber.partner_tim:
+        if unused_timber.id in used_timber.partner_tim:
             raise ValueError("partner update has not gone well cuz partner already in partner_tim list")
         else:
-            used_timber.partner_tim.append(unused_timber.name)
+            used_timber.partner_tim.append(unused_timber.id)
 
         if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber.name)
+            unused_timber.partner_tim.append(used_timber.id)
         else:
             raise ValueError("unused_timber partner must to be [].")
 
         # 木材同士の間隔の最小値を計測。
         for i in range(len(self.used_list)):
             already_exist_timber = self.used_list[i]
-            already_exist_timber_name = self.used_list[i].name
+            already_exist_timber_name = self.used_list[i].id
             if already_exist_timber_name in already_regenerated_list:
                 timber.distanceBetweenTimber_RhinoCommon(already_exist_timber, unused_timber)
 
@@ -628,7 +625,7 @@ class Generate:
                     y = rnd.randint(0, len(self.timber_list) - 1)
                     unused_timber = self.timber_list[y]
 
-                    length_of_between = used_timber1.tim_distance[used_timber2.name][0]
+                    length_of_between = used_timber1.tim_distance[used_timber2.id][0]
                     length_of_timber = unused_timber.timber_length
                     # print("length_of_between", length_of_between)
                     # print("length_of_timber", length_of_timber)
@@ -677,8 +674,8 @@ class Generate:
                 for select_domain_loop in range(200):
 
                     # GL_01 に材が食い込むなら再選択
-                    select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
-                    select_domain_2 = used_timber2.selectSurfaceDomain_2()
+                    select_domain_1 = used_timber1.select_surface_domain()  # select_domain はドメインの値をintで返される。
+                    select_domain_2 = used_timber2.select_surface_domain()
 
                     # print("select_domain_1", select_domain_1)
                     # print("select_domain_2", select_domain_2)
@@ -878,21 +875,21 @@ class Generate:
         # 使用domainの更新のための値
         select_domain_3_end = abs(int(t_ // domain_range3))
         # print("select_domain_3_end : %s" % (select_domain_3_end))
-        used_timber1.select_domain_list.append([select_domain_1, unused_timber.name])
-        used_timber2.select_domain_list.append([select_domain_2, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.name])
-        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.name])
+        used_timber1.select_domain_list.append([select_domain_1, unused_timber.id])
+        used_timber2.select_domain_list.append([select_domain_2, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.id])
+        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.id])
 
         # partner_tim 更新
-        if unused_timber.name in used_timber1.partner_tim or unused_timber.name in used_timber2.partner_tim:
+        if unused_timber.id in used_timber1.partner_tim or unused_timber.id in used_timber2.partner_tim:
             raise ValueError("update of partner_tim has not gone well cuz partner already in partner_list")
         else:
-            used_timber1.partner_tim.append(unused_timber.name)  # add the partner timber name ---> name is number
-            used_timber2.partner_tim.append(unused_timber.name)
+            used_timber1.partner_tim.append(unused_timber.id)  # add the partner timber name ---> name is number
+            used_timber2.partner_tim.append(unused_timber.id)
 
         if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber1.name)
-            unused_timber.partner_tim.append(used_timber2.name)
+            unused_timber.partner_tim.append(used_timber1.id)
+            unused_timber.partner_tim.append(used_timber2.id)
         else:
             raise ValueError("unused_timber partner must to be [].")
 
@@ -902,7 +899,6 @@ class Generate:
         self.used_list.append(unused_timber)
         self.timber_list.pop(y)
 
-        self.count_bridge = self.count_bridge + 1
 
         # end_time = time.time()
         # print("Processing bridge_RhinoCommon Time : %s" % (end_time - start_time))
@@ -937,7 +933,7 @@ class Generate:
         tim3_center_crv = self.used_list[tim_add_num].center_line
 
         # bridge可能か判断　その１
-        distance = used_timber1.tim_distance[used_timber2.name][0]
+        distance = used_timber1.tim_distance[used_timber2.id][0]
         if distance + 100 > unused_timber.timber_length:
             # print("reselect timber cuz lack of length: in bridge")
             return False
@@ -959,8 +955,8 @@ class Generate:
 
             select_domain_3_start = 0  # TODO 今のところ固定値
             for select_domain_loop in range(200):
-                select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
-                select_domain_2 = used_timber2.selectSurfaceDomain_2()
+                select_domain_1 = used_timber1.select_surface_domain()  # select_domain はドメインの値をintで返される。
+                select_domain_2 = used_timber2.select_surface_domain()
 
                 # print("select_domain_1", select_domain_1)
                 # print("select_domain_2", select_domain_2)
@@ -1134,7 +1130,7 @@ class Generate:
             if self.flag_layer_change:
                 # layerを変更して正しいレイヤーへ
                 a = 'tim'
-                b = str(unused_timber.name)
+                b = str(unused_timber.id)
                 # print("unused_timber.name", unused_timber.name)
                 rs.CurrentLayer(a + b)
 
@@ -1164,28 +1160,28 @@ class Generate:
         # 使用domainの更新のための値
         select_domain_3_end = abs(int(t_ // domain_range3))
         # print("select_domain_3_end : %s" % (select_domain_3_end))
-        used_timber1.select_domain_list.append([select_domain_1, unused_timber.name])
-        used_timber2.select_domain_list.append([select_domain_2, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.name])
-        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.name])
+        used_timber1.select_domain_list.append([select_domain_1, unused_timber.id])
+        used_timber2.select_domain_list.append([select_domain_2, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.id])
+        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.id])
 
         # partner_timの更新
-        if unused_timber.name in used_timber1.partner_tim or unused_timber.name in used_timber2.partner_tim:
+        if unused_timber.id in used_timber1.partner_tim or unused_timber.id in used_timber2.partner_tim:
             raise ValueError("update of partner_tim has not gone well cuz partner already in partner_list")
         else:
-            used_timber1.partner_tim.append(unused_timber.name)
-            used_timber2.partner_tim.append(unused_timber.name)
+            used_timber1.partner_tim.append(unused_timber.id)
+            used_timber2.partner_tim.append(unused_timber.id)
 
         if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber1.name)
-            unused_timber.partner_tim.append(used_timber2.name)
+            unused_timber.partner_tim.append(used_timber1.id)
+            unused_timber.partner_tim.append(used_timber2.id)
         else:
             raise ValueError("unused_timber partner must to be [].")
 
         # 木材同士の最短距離を計算する。
         for i in range(len(self.used_list)):
             already_exist_timber = self.used_list[i]
-            already_exist_timber_name = self.used_list[i].name
+            already_exist_timber_name = self.used_list[i].id
             if already_exist_timber_name in already_regenerated_list:
                 timber.distanceBetweenTimber_RhinoCommon(already_exist_timber, unused_timber)
 
@@ -1224,7 +1220,7 @@ class Generate:
 
                 # layer分けをする
                 Parent_layer = used_list
-                child1_layer = self.used_list[i].name
+                child1_layer = self.used_list[i].id
 
                 # child1 layer
                 timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
@@ -1246,7 +1242,7 @@ class Generate:
 
                 # layer分けをする
                 Parent_layer = used_list
-                child1_layer = self.used_list[i].name
+                child1_layer = self.used_list[i].id
 
                 # child1 layer
                 timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
@@ -1272,7 +1268,7 @@ class Generate:
 
                 # layer分けをする
                 Parent_layer = not_use_list
-                child1_layer = self.not_use_list[i].name
+                child1_layer = self.not_use_list[i].id
 
                 # child1 layer
                 timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
@@ -1294,7 +1290,7 @@ class Generate:
 
                 # layer分けをする
                 Parent_layer = not_use_list
-                child1_layer = self.not_use_list[i].name
+                child1_layer = self.not_use_list[i].id
 
                 # child1 layer
                 timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)

@@ -107,5 +107,4 @@ print("Processing Time : {}".format(time_end - time_start))
 
 scriptcontext.doc.Objects.AddBrep(tim_srf_2)
 scriptcontext.doc.Objects.AddCurve(tim_axis_2)
-# scriptcontext.doc.Objects.AddSurface(tim_srf_1)
 scriptcontext.doc.Objects.AddLine(tim1_min_p, tim2_min_p)

@@ -1368,7 +1368,7 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
 
         # 追加する材のused_list内におけるインデックスを取得
         for j in range(len(pop_1.used_list)):
-            if tim1_name == pop_1.used_list[j].name:
+            if tim1_name == pop_1.used_list[j].id:
                 tim1_index = j
                 break
 
@@ -1379,7 +1379,7 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
             for l in range(len(already_regenerate_id)):
                 tim_id = already_regenerate_id[l]
                 for m in range(len(pop_1.used_list)):
-                    if tim_id == pop_1.used_list[m].name:
+                    if tim_id == pop_1.used_list[m].id:
                         partner_num.append(len(pop_1.used_list[m].partner_tim))
                         break
             tim_index = [i for i, x in enumerate(partner_num) if x == min(partner_num)]
@@ -1432,12 +1432,12 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
             tim3_name = already_regenerate_id[tim3_select_index]
 
             for l in range(len(pop_1.used_list)):
-                if pop_1.used_list[l].name == tim2_name:
+                if pop_1.used_list[l].id == tim2_name:
                     tim2_index = l
                     break
 
             for l in range(len(pop_1.used_list)):
-                if pop_1.used_list[l].name == tim3_name:
+                if pop_1.used_list[l].id == tim3_name:
                     tim3_index = l
                     break
 
@@ -1460,27 +1460,27 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
             if success_flag:
                 if mutation:
                     yet_regenerate_id.pop(while_loop_count)
-                    already_regenerate_id.append(pop_1.used_list[tim1_index].name)
+                    already_regenerate_id.append(pop_1.used_list[tim1_index].id)
 
                     # 後ほどpartner_timを更新するため for bridge
-                    list_temp_partner_tim[loop][pop_1.used_list[tim1_index].name].append(
-                        pop_1.used_list[tim2_index].name)
-                    list_temp_partner_tim[loop][pop_1.used_list[tim2_index].name].append(
-                        pop_1.used_list[tim1_index].name)
+                    list_temp_partner_tim[loop][pop_1.used_list[tim1_index].id].append(
+                        pop_1.used_list[tim2_index].id)
+                    list_temp_partner_tim[loop][pop_1.used_list[tim2_index].id].append(
+                        pop_1.used_list[tim1_index].id)
 
                 else:
                     yet_regenerate_id.pop(while_loop_count)
-                    already_regenerate_id.append(pop_1.used_list[tim1_index].name)
+                    already_regenerate_id.append(pop_1.used_list[tim1_index].id)
 
                     # 後ほどpartner_timを更新するため for bridge
-                    list_temp_partner_tim[loop][pop_1.used_list[tim1_index].name].append(
-                        pop_1.used_list[tim2_index].name)
-                    list_temp_partner_tim[loop][pop_1.used_list[tim1_index].name].append(
-                        pop_1.used_list[tim3_index].name)
-                    list_temp_partner_tim[loop][pop_1.used_list[tim2_index].name].append(
-                        pop_1.used_list[tim1_index].name)
-                    list_temp_partner_tim[loop][pop_1.used_list[tim3_index].name].append(
-                        pop_1.used_list[tim1_index].name)
+                    list_temp_partner_tim[loop][pop_1.used_list[tim1_index].id].append(
+                        pop_1.used_list[tim2_index].id)
+                    list_temp_partner_tim[loop][pop_1.used_list[tim1_index].id].append(
+                        pop_1.used_list[tim3_index].id)
+                    list_temp_partner_tim[loop][pop_1.used_list[tim2_index].id].append(
+                        pop_1.used_list[tim1_index].id)
+                    list_temp_partner_tim[loop][pop_1.used_list[tim3_index].id].append(
+                        pop_1.used_list[tim1_index].id)
                 break
             else:
                 continue

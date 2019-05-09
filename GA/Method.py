@@ -49,7 +49,7 @@ def confirm_pop_divide(num_timber, pop_instance1):
     # print('emerge_list', emerge_list)
 
     partner = pop_instance1.used_list[0].partner_tim
-    tim_name = pop_instance1.used_list[0].name
+    tim_name = pop_instance1.used_list[0].id
 
     if tim_name not in emerge_list:
         emerge_list.append(tim_name)
@@ -90,7 +90,7 @@ def confirm_pop_divide(num_timber, pop_instance1):
         re_loop = False
 
         for i in range(num_timber):
-            if pop_instance1.used_list[i].name == tim_name:
+            if pop_instance1.used_list[i].id == tim_name:
                 partner = pop_instance1.used_list[i].partner_tim
 
                 # 3つのリストを更新する
@@ -182,8 +182,8 @@ def decide_inheritance_timber(pop_instance1, pop_instance2, already_regenerate_l
     xf = Rhino.Geometry.Transform.Translation(vec_move)
 
     for i in range(len(pop_instance2.used_list)):
-        if pop_instance2.used_list[i].name not in already_regenerate_list:
-            move_pop2_num_list.append(pop_instance2.used_list[i].name)
+        if pop_instance2.used_list[i].id not in already_regenerate_list:
+            move_pop2_num_list.append(pop_instance2.used_list[i].id)
         else:
             continue
 
@@ -194,7 +194,7 @@ def decide_inheritance_timber(pop_instance1, pop_instance2, already_regenerate_l
     for i in range(len(move_pop2_num_list)):
         move_index = move_pop2_num_list[i]
         for j in range(len(pop_instance2.used_list)):
-            if move_index == pop_instance2.used_list[j].name:
+            if move_index == pop_instance2.used_list[j].id:
                 srf = copy.deepcopy(pop_instance2.used_list[j].surface)
                 axis = copy.deepcopy(pop_instance2.used_list[j].center_line)
                 srf.Transform(xf)
@@ -203,7 +203,7 @@ def decide_inheritance_timber(pop_instance1, pop_instance2, already_regenerate_l
                 list_srf.append(srf)
                 list_axis.append(axis)
                 list_section_length.append(pop_instance2.used_list[j].section_length)
-                list_timber_num.append(pop_instance2.used_list[j].name)
+                list_timber_num.append(pop_instance2.used_list[j].id)
 
     # 接触判定を行う。 TODO セグメントを増やすなどして精度を向上させる必要あり。
     for i in range(len(list_srf)):
@@ -216,7 +216,7 @@ def decide_inheritance_timber(pop_instance1, pop_instance2, already_regenerate_l
         connect_flag = False
         for j in range(len(already_regenerate_list)):
             for k in range(len(pop_instance1.used_list)):
-                if already_regenerate_list[j] == pop_instance1.used_list[k].name:
+                if already_regenerate_list[j] == pop_instance1.used_list[k].id:
                     tim_other = pop_instance1.used_list[k].center_line
                     tim_end = tim_other.PointAtEnd
                     tim_start = tim_other.PointAtStart
@@ -270,15 +270,15 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
     pop_num_2 = pop_instance2.population_num
     num_range = pop_num_1 - pop_num_2
 
-    move_from_p = Rhino.Geometry.Point3d(0,0,0)
-    move_to_p = Rhino.Geometry.Point3d(num_range*generate_range*2,0,0)
+    move_from_p = Rhino.Geometry.Point3d(0, 0, 0)
+    move_to_p = Rhino.Geometry.Point3d(num_range*generate_range*2, 0, 0)
     vec_move = move_to_p - move_from_p
     xf = Rhino.Geometry.Transform.Translation(vec_move)
 
     # すでに生成されている部材をのぞく部材IDを一旦リスト内に格納する。
     for i in range(len(pop_instance2.used_list)):
-        if pop_instance2.used_list[i].name not in already_regenerate_list:
-            move_pop2_num_list.append(pop_instance2.used_list[i].name)
+        if pop_instance2.used_list[i].id not in already_regenerate_list:
+            move_pop2_num_list.append(pop_instance2.used_list[i].id)
         else:
             continue
 
@@ -289,7 +289,7 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
     for i in range(len(move_pop2_num_list)):
         move_index = move_pop2_num_list[i]
         for j in range(len(pop_instance2.used_list)):
-            if move_index == pop_instance2.used_list[j].name:
+            if move_index == pop_instance2.used_list[j].id:
                 srf = copy.deepcopy(pop_instance2.used_list[j].surface)
                 # axis = copy.deepcopy(pop_instance2.used_list[j].center_line)
                 srf.Transform(xf)
@@ -298,7 +298,7 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
                 list_srf.append(srf)
                 # list_axis.append(axis)
                 # list_section_length.append(pop_instance2.used_list[j].section_length)
-                list_timber_num.append(pop_instance2.used_list[j].name)
+                list_timber_num.append(pop_instance2.used_list[j].id)
 
     # surfaceを用いた接触判定をおこなう。
     for i in range(len(list_srf)):
@@ -308,7 +308,7 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
         intersection_flag = False
         for j in range(len(already_regenerate_list)):
             for k in range(len(pop_instance1.used_list)):
-                if already_regenerate_list[j] == pop_instance1.used_list[k].name:
+                if already_regenerate_list[j] == pop_instance1.used_list[k].id:
                     srf_other = pop_instance1.used_list[k].surface
                     tim2_segment_points, tim2_diameter = calculate_srf_segment_points(srf_other, segment_num)
 
@@ -362,7 +362,7 @@ def move_and_pop_update_for_already(already_regenerate, pop_instance, generate_r
     for i in range(len(already_regenerate)):
         success_flag = False
         for j in range(len(pop_instance.used_list)):
-            if already_regenerate[i] == pop_instance.used_list[j].name:
+            if already_regenerate[i] == pop_instance.used_list[j].id:
                 tim_move = pop_instance.used_list[j]
 
                 pop_index = pop_instance.pop_index
@@ -385,7 +385,7 @@ def move_and_pop_update_for_already(already_regenerate, pop_instance, generate_r
     for i in range(len(already_regenerate)):
         tim_num = already_regenerate[i]
         for j in range(len(pop_instance.used_list)):
-            if pop_instance.used_list[j].name == tim_num:
+            if pop_instance.used_list[j].id == tim_num:
                 tim_index = j
                 break
 
@@ -401,7 +401,7 @@ def move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_instanc
     for i in range(len(decide_inheritance_num_list)):
         success_flag = False
         for j in range(len(pop_instance1.used_list)):
-            if decide_inheritance_num_list[i] == pop_instance1.used_list[j].name:
+            if decide_inheritance_num_list[i] == pop_instance1.used_list[j].id:
                 tim_move = pop_instance1.used_list[j]
 
                 pop_index1 = pop_instance1.pop_index
@@ -426,7 +426,7 @@ def move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_instanc
     for i in range(len(decide_inheritance_num_list)):
         tim_num = decide_inheritance_num_list[i]
         for j in range(len(pop_instance1.used_list)):
-            if pop_instance2.used_list[j].name == tim_num:
+            if pop_instance2.used_list[j].id == tim_num:
                 tim_index = j
                 break
 
@@ -452,7 +452,7 @@ def RenewalInstanceInformationSameGeneration(pop_instance, temp_save_list_srf, t
     :return:
     """
     for i in range(len(pop_instance.used_list)):
-        name_tim = pop_instance.used_list[i].name
+        name_tim = pop_instance.used_list[i].id
 
         temp_save_list_srf[loop][name_tim] = pop_instance.used_list[i].surface
         pop_instance.used_list[i].surface = None
@@ -478,9 +478,9 @@ def RenewalPop2(pop_instance1, pop_instance2, pop_2_inheritance_num):
     for i in range(len(pop_2_inheritance_num)):
         inheritance_num = pop_2_inheritance_num[i]
         for j in range(len(pop_instance1.used_list)):
-            if pop_instance1.used_list[j].name == inheritance_num:
+            if pop_instance1.used_list[j].id == inheritance_num:
                 for k in range(len(pop_instance2.used_list)):
-                    if pop_instance2.used_list[k].name == inheritance_num:
+                    if pop_instance2.used_list[k].id == inheritance_num:
                         pop_instance1.used_list[j].surface = copy.deepcopy(pop_instance2.used_list[k].surface)
                         pop_instance1.used_list[j].center_line = copy.deepcopy(pop_instance2.used_list[k].center_line)
                         pop_instance1.used_list[j].select_domain_list = copy.deepcopy(pop_instance2.used_list[k].select_domain_list)
@@ -522,7 +522,7 @@ def selectDomainRenewal(already_regenerate, num_timber, pop_instance):
     """
     for i in range(len(already_regenerate)):
         for j in range(num_timber):
-            if already_regenerate[i] == pop_instance.used_list[j].name:
+            if already_regenerate[i] == pop_instance.used_list[j].id:
                 count_domain_loop = -1
                 for _ in range(len(pop_instance.used_list[j].select_domain_list)):
                     count_domain_loop = count_domain_loop + 1
@@ -543,7 +543,7 @@ def selectDomainRenewal2(inheritance_num_list, num_timber, pop_instance1):
 
      for i in range(len(inheritance_num_list)):
             for j in range(num_timber):
-                if inheritance_num_list[i] == pop_instance1.used_list[j].name:
+                if inheritance_num_list[i] == pop_instance1.used_list[j].id:
                     count_domain_loop = -1
                     for _ in range(len(pop_instance1.used_list[j].select_domain_list)):
                         count_domain_loop = count_domain_loop + 1

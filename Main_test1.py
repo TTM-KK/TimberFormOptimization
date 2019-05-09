@@ -28,7 +28,7 @@ bridge_num = 4
 divide_range = 3  # 次世代に継承する材の最低本数を指定
 pop_num = 5  # 初期個体数。世代ごとの個体数　ttm add 181003
 elite_num = 1  # エリート選択における選択数。
-generation_num = 10  # 世代数
+generation_num = 3  # 世代数
 tournament_size = 2  # トーナメントサイズ
 tournament_num = 1  # トーナメント選択の回数
 mutation_ratio = 3  # 突然変異の確率
@@ -162,7 +162,7 @@ if initial_population_draw:
         for j in range(num_timber):
             if layer_flag:
                 a = 'tim'
-                b = str(dic['generate' + str(i)].used_list[j].name)
+                b = str(dic['generate' + str(i)].used_list[j].id)
                 rs.CurrentLayer(a + b)
 
             sf = scriptcontext.doc.Objects.AddBrep(dic['generate' + str(i)].used_list[j].surface)
@@ -187,7 +187,7 @@ if initial_population_draw:
         for j in range(num_timber):
             if layer_flag:
                 a = 'tim'
-                b = str(dic['generate' + str(i)].used_list[j].name)
+                b = str(dic['generate' + str(i)].used_list[j].id)
                 rs.CurrentLayer(a+b)
 
             sf = scriptcontext.doc.Objects.AddBrep(dic['generate' + str(i)].used_list[j].surface)
@@ -273,7 +273,7 @@ for main_loop in range(generation_num):
     for i in range(pop_num):
         for j in range(num_timber):
             for k in range(num_timber):
-                if dic['generate' + str(i)].used_list[k].name == j:
+                if dic['generate' + str(i)].used_list[k].id == j:
                     list_partner_tim_prior_generation[i][j].extend(dic['generate' + str(i)].used_list[j].partner_tim)
                     break
     print("list_partner_tim_prior_generation", list_partner_tim_prior_generation)
@@ -369,7 +369,7 @@ for main_loop in range(generation_num):
         # pop1のpartner_listを更新する。
         for i in range(num_timber):
             for j in range(num_timber):
-                if pop_1.used_list[j].name == i:
+                if pop_1.used_list[j].id == i:
                     pop_1.used_list[j].partner_tim = []
                     pop_1.used_list[j].partner_tim.extend(list_temp_partner_tim[loop][i])
                     break
@@ -378,7 +378,7 @@ for main_loop in range(generation_num):
         check_timber_partner2 = []
         for i in range(num_timber):
             for j in range(num_timber):
-                if pop_1.used_list[j].name == i:
+                if pop_1.used_list[j].id == i:
                     check_timber_partner2.append(pop_1.used_list[j].partner_tim)
                     break
         # print("check temp timber partner : %s" % (check_timber_partner2))
@@ -400,7 +400,7 @@ for main_loop in range(generation_num):
         check_timber_partner3 = []
         for i in range(num_timber):
             for j in range(num_timber):
-                if pop_1.used_list[j].name == i:
+                if pop_1.used_list[j].id == i:
                     check_timber_partner3.append(pop_1.used_list[j].partner_tim)
                     break
 
@@ -412,7 +412,7 @@ for main_loop in range(generation_num):
         # pop_1のpartner_timを再生成前の状態に戻す。
         for i in range(num_timber):
             for j in range(num_timber):
-                if pop_1.used_list[j].name == i:
+                if pop_1.used_list[j].id == i:
                     pop_1.used_list[j].partner_tim = []
                     pop_1.used_list[j].partner_tim.extend(list_partner_tim_prior_generation[pop_1.population_num][i])
                     break
@@ -451,7 +451,7 @@ for main_loop in range(generation_num):
     # srf, center_lineの更新
     for i in range(pop_num):
         for j in range(num_timber):
-            name_tim = dic['generate' + str(i)].used_list[j].name
+            name_tim = dic['generate' + str(i)].used_list[j].id
             # print("name_tim", name_tim)
             dic['generate' + str(i)].used_list[j].center_line = None  # listで問題ないっぽい
             dic['generate' + str(i)].used_list[j].center_line = temp_list_center_for_next_generation[i][name_tim]
@@ -463,7 +463,7 @@ for main_loop in range(generation_num):
     for i in range(pop_num):
         for j in range(num_timber):
             for k in range(num_timber):  # TODO
-                if dic['generate' + str(i)].used_list[k].name == j:
+                if dic['generate' + str(i)].used_list[k].id == j:
                     dic['generate' + str(i)].used_list[k].partner_tim = []
                     dic['generate' + str(i)].used_list[k].partner_tim.extend(list_temp_partner_tim[i][j])
 
@@ -471,7 +471,7 @@ for main_loop in range(generation_num):
 
             # 中心線を更新しているので、リスト内の値を更新するb
             # print("check error", dic['generate' + str(i)].used_list[j].center_line)
-            dic['generate' + str(i)].used_list[j].mesureLength_RhinoCommon()
+            dic['generate' + str(i)].used_list[j].measure_length()
 
     # tim_distance の更新
     for i in range(pop_num):
@@ -481,7 +481,7 @@ for main_loop in range(generation_num):
                     timberMethod.distanceBetweenTimber_RhinoCommon(dic['generate' + str(i)].used_list[j],
                                                                    dic['generate' + str(i)].used_list[k])
                 else:
-                    dic['generate' + str(i)].used_list[j].tim_distance[dic['generate' + str(i)].used_list[j].name] = []
+                    dic['generate' + str(i)].used_list[j].tim_distance[dic['generate' + str(i)].used_list[j].id] = []
                     continue
 
     # # gene_information の更新
@@ -494,7 +494,7 @@ for main_loop in range(generation_num):
         for j in range(num_timber):
             dic['generate' + str(i)].used_list[j].select_domain_list = []
             dic['generate' + str(i)].used_list[j].select_domain_list.extend(
-                temp_list_select_domain_list_for_next_generation[i][dic['generate' + str(i)].used_list[j].name])
+                temp_list_select_domain_list_for_next_generation[i][dic['generate' + str(i)].used_list[j].id])
 
 # Step10:  EVALUATION
 evaluation_value = []

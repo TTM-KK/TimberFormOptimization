@@ -191,7 +191,7 @@ def random_chunk_crossover(num_timber, divide_range, pop1):
             print("")
 
         for k in range(num_timber):
-            if pop1.used_list[k].name == choice_id:
+            if pop1.used_list[k].id == choice_id:
                 index = k
                 break
             else:
