@@ -56,11 +56,11 @@ def distanceBetweenTimber(timber1, timber2):
     #     timber2.tim_distance[timber1.name].append(100)
 
     # else:
-    timber1.tim_distance[timber2.name] = []
-    timber2.tim_distance[timber1.name] = []
+    timber1.tim_distance[timber2.id] = []
+    timber2.tim_distance[timber1.id] = []
 
-    timber1.tim_distance[timber2.name].append(distance)
-    timber2.tim_distance[timber1.name].append(distance)
+    timber1.tim_distance[timber2.id].append(distance)
+    timber2.tim_distance[timber1.id].append(distance)
 
 
 def distanceBetweenTimber_RhinoCommon(timber1, timber2):
@@ -137,13 +137,8 @@ def distanceBetweenTimber_RhinoCommon(timber1, timber2):
     #     timber2.tim_distance[timber1.name].append(100)
 
     # else:
-    timber1.tim_distance[timber2.name] = []
-    timber2.tim_distance[timber1.name] = []
+    timber1.tim_distance[timber2.id] = []
+    timber2.tim_distance[timber1.id] = []
 
-    timber1.tim_distance[timber2.name].append(distance)
-    timber2.tim_distance[timber1.name].append(distance)
-
-
-def initDistanceBetweenTimber(timber1, timber2):
-    center_line_tim1 = timber1.center_line
-    center_line_tim2 = timber2.center_line
+    timber1.tim_distance[timber2.id].append(distance)
+    timber2.tim_distance[timber1.id].append(distance)

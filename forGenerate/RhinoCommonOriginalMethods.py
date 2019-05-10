@@ -47,7 +47,7 @@ def GetTimberSectionLength_RhinoCommon(tim_srf, base_point):
     :return: section diameter length
     """
     rc, u, v = tim_srf.Faces[0].ClosestPoint(base_point)
-    V = tim_srf.Faces[0].Domain(1).T0 , tim_srf.Faces[0].Domain(1).T1
+    V = tim_srf.Faces[0].Domain(1).T0, tim_srf.Faces[0].Domain(1).T1
 
     if V[0] < 0:
         divide_V = abs(V[0] / 10)

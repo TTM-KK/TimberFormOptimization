@@ -4,6 +4,7 @@ import random as rnd
 import copy
 import rhinoscriptsyntax as rs
 
+
 def selectDividePoints(num_timber, divide_range):
     divide_point1 = None
     divide_point2 = None
@@ -52,17 +53,43 @@ def select2Poplation(selected_list):
 
     return pop_1, pop_2
 
-def TwoPointCrossover(num_timber, pop1_instance, pop2_instance, divide_point_index1, divide_point_index2, list_temp_gene):
+
+def two_point_crossover(num_timber, divide_range, pop1_instance, pop2_instance, list_temp_gene):
+    divide_point1 = None
+    divide_point2 = None
+
+    flag_divide_point = True
+    avoid_infinite_loop = 0
+    while flag_divide_point:
+        avoid_infinite_loop = avoid_infinite_loop + 1
+        if avoid_infinite_loop > 100:
+            print("This is infinite loop in generate divide point")
+            input("This is infinite loop in generate divide point near 330, please press ESC key")
+            break
+
+        divide_point1 = rnd.randint(0, num_timber - 1)
+        divide_point2 = rnd.randint(0, num_timber - 1)
+
+        if divide_point1 == divide_point2:
+            continue
+        # 次世代に継承する木材の最低本数を予め設定する
+        # --------------------------------------------------------
+
+        if not abs(divide_point1 - divide_point2) >= divide_range:
+            continue
+        else:
+            break
+
     gene_info_temp = []
     gene_info_center_temp = []
     gene_info_front_temp = []
     gene_info_back_temp = []
-    if divide_point_index1 < divide_point_index2:
-        a = divide_point_index1
-        b = divide_point_index2
+    if divide_point1 < divide_point2:
+        a = divide_point1
+        b = divide_point2
     else:
-        a = divide_point_index2
-        b = divide_point_index1
+        a = divide_point2
+        b = divide_point1
     c = b - a
 
     pop1_gene_info = copy.deepcopy(pop1_instance.gene_info)
@@ -115,3 +142,74 @@ def TwoPointCrossover(num_timber, pop1_instance, pop2_instance, divide_point_ind
     already_regenerate.extend(pop1_instance.temp_used_list)
 
     return already_regenerate
+
+
+def random_chunk_crossover(num_timber, divide_range, pop1):
+    '''
+    ランダムに次世代に引き継ぐ部材数を決定する。接合部材関係をたどることで、
+    塊として次世代に継承することを可能にしている。
+    :param num_timber:
+    :param divide_range:
+    :param pop1:
+    :return:
+    '''
+    
+    # 次世代への継承部材数を決定する。
+    inheritance_num = rnd.randint(divide_range - 1, num_timber - 1)
+
+    select_tim_ids = []
+    flag = True
+    avoid_infinite_loop = -1
+    while flag:
+        avoid_infinite_loop += 1
+        if avoid_infinite_loop > 1000:
+            # raise Exception('random_chunk_crossover is gone')
+            print("random_chunk_crossover break cuz init or not work well")
+            break
+
+        if avoid_infinite_loop == 0:
+            loop = True
+            while loop:
+                index = rnd.randint(0, num_timber - 1)
+                partner_sum = len(pop1.used_list[index].partner_tim)
+                if partner_sum == 0:
+                    continue
+                else:
+                    break
+        else:
+            partner_sum = len(pop1.used_list[index].partner_tim)
+
+        for j in range(partner_sum):
+            select_tim_id = pop1.used_list[index].partner_tim[j]
+
+            if select_tim_id not in select_tim_ids:
+                select_tim_ids.append(select_tim_id)
+
+                if len(select_tim_ids) >= inheritance_num:
+                    flag = False
+                    break
+            else:
+                pass
+
+        if not flag:
+            break
+
+        if len(pop1.used_list[index].partner_tim) >= 1:
+            choice_id = rnd.choice(pop1.used_list[index].partner_tim)
+        else:
+            pass
+            # print("partner_tim", pop1.used_list[index].partner_tim)
+
+        for k in range(num_timber):
+            if pop1.used_list[k].id == choice_id:
+                index = k
+                break
+            else:
+                pass
+
+    print("inheritance_num", inheritance_num)
+    print("select_tim_ids", select_tim_ids)
+    # if not len(select_tim_ids) == inheritance_num:
+    #     raise Exception('inheritance did not work')
+
+    return select_tim_ids

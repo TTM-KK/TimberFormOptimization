@@ -54,4 +54,3 @@ def mark_instance(pop_num, all_mark):
         temp_mark.append(dic3['allMark' + str(i)])
 
     return temp_mark
-

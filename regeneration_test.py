@@ -1,67 +1,110 @@
+# coding: utf-8
+
 import rhinoscriptsyntax as rs
 import Rhino
 import scriptcontext
+import time
 
 
-segment_num = 10
-segment_index = 5
+def calculate_srf_segment_points(srf, segment_num):
+    srf_domain_u = srf.Faces[0].Domain(0)
+    srf_domain_v = srf.Faces[0].Domain(1)
+
+    srf_domain_u_segment = (srf_domain_u[1] - srf_domain_u[0]) / segment_num
+    srf_domain_v_segment = (srf_domain_v[1] - srf_domain_v[0]) / 10
+
+    segment_points_list = []
+    diameter_list = []
+    for i in range(segment_num + 1):
+        p1_u = srf_domain_u[0] + (srf_domain_u_segment * i)
+        p1_v = srf_domain_v[0] + (srf_domain_v_segment * 0)
+
+        p2_u = srf_domain_u[0] + (srf_domain_u_segment * i)
+        p2_v = srf_domain_v[0] + (srf_domain_v_segment * 5)
+
+        srf_point1 = srf.Faces[0].PointAt(p1_u, p1_v)
+        srf_point2 = srf.Faces[0].PointAt(p2_u, p2_v)
+
+        line = Rhino.Geometry.Line(srf_point2, srf_point1)
+        diameter = line.Length
+
+        center_p = line.PointAt(0.5)
+        segment_points_list.append(center_p)
+        diameter_list.append(diameter)
+
+    return segment_points_list, diameter_list
+
+
+def calculate_connect_part_indices(tim1_segment_points, tim2_segment_points, segment_num):
+    between_length_list = []
+    for i in range(len(tim1_segment_points)):
+        tim1_p = tim1_segment_points[i]
+        for j in range(len(tim2_segment_points)):
+            tim2_p = tim2_segment_points[j]
+
+            between_vec = tim2_p - tim1_p
+            length = between_vec.Length
+            between_length_list.append(length)
+
+    length_min = min(between_length_list)
+    index = between_length_list.index(length_min)
+
+    tim1_index = index // (segment_num + 1)
+    tim2_index = index % (segment_num + 1)
+
+    return tim1_index, tim2_index
+
+
+def transform_object_rhinocommon(object, vec_move):
+    xf = Rhino.Geometry.Transform.Translation(vec_move)
+    object.Transform(xf)
+    
+
+segment_num = 20
 
 
 tim_srf_1 = rs.GetObject('select the surface tim1', rs.filter.surface)
 tim_srf_2 = rs.GetObject('select the surface tim2', rs.filter.surface)
-
 tim_axis_1 = rs.GetObject('select the axis tim1', rs.filter.curve)
 tim_axis_2 = rs.GetObject('select the axis tim2', rs.filter.curve)
 
-tim_srf_1 = rs.coercesurface(tim_srf_1)
-tim_srf_2 = rs.coercesurface(tim_srf_2)
-
+tim_srf_1 = rs.coercebrep(tim_srf_1)
+tim_srf_2 = rs.coercebrep(tim_srf_2)
 tim_axis_1 = rs.coercecurve(tim_axis_1)
 tim_axis_2 = rs.coercecurve(tim_axis_2)
 
-axis_domain_1 = tim_axis_1.Domain
-axis_domain_2 = tim_axis_2.Domain
+time_start = time.time()
 
-domain_segment_length_1 = (axis_domain_1[1] - axis_domain_1[0]) / segment_num
-domain_segment_length_2 = (axis_domain_2[1] - axis_domain_2[0]) / segment_num
-
-srf_domainU_1 = tim_srf_1.Domain(0)
-srf_domainU_2 = tim_srf_2.Domain(0)
-srf_domainV_1 = tim_srf_1.Domain(1)
-srf_domainV_2 = tim_srf_2.Domain(1)
-
-srf_domainU_segment_1 = (srf_domainU_1[1] - srf_domainU_1[0]) / segment_num
-srf_domainU_segment_2 = (srf_domainU_2[1] - srf_domainU_2[0]) / segment_num
-
-srf_domainV_segment_1 = (srf_domainV_1[1] - srf_domainV_1[0]) / segment_num
-srf_domainV_segment_2 = (srf_domainV_2[1] - srf_domainV_2[0]) / segment_num
-
-tim_segment_diameter_1 = []
-tim_segment_diameter_2 = []
 # 精度を求めるならばVが2,7のときの直径を求め、その値もリストに格納しておく。
-for i in range(segment_num):
-    p1_U = srf_domainU_1[0] + (srf_domainU_segment_1 * i)
-    p1_V = srf_domainV_1[0] + (srf_domainV_segment_1 * 0)
+tim1_segment_points, tim1_diameter = calculate_srf_segment_points(tim_srf_1, segment_num)
+tim2_segment_points, tim2_diameter = calculate_srf_segment_points(tim_srf_2, segment_num)
 
-    p2_U = srf_domainU_1[0] + (srf_domainU_segment_1 * i)
-    p2_V = srf_domainV_1[0] + (srf_domainV_segment_1 * 5)
 
-    srf_point1 = tim_srf_1.PointAt(p1_U, p1_V)
-    srf_point2 = tim_srf_1.PointAt(p2_U, p2_V)
+tim1_index, tim2_index = calculate_connect_part_indices(tim1_segment_points, tim2_segment_points, segment_num)
 
-    diameter_vec = srf_point2 - srf_point1
-    diameter_length = diameter_vec.Length
 
-    # scriptcontext.doc.Objects.AddLine(srf_point2, srf_point1)
+tim1_min_p = tim1_segment_points[tim1_index]
+tim2_min_p = tim2_segment_points[tim2_index]
 
-    tim_segment_diameter_1.append(diameter_length)
+vec_move = tim1_min_p - tim2_min_p
+print(vec_move.Length)
 
-print(tim_segment_diameter_1)
-#
-# crv_point1 = tim_axis_1.PointAt(domain_segment_length_1 * segment_index)
-# crv_point2 = tim_axis_1.PointAt(domain_segment_length_1 * (segment_index + 1))
-#
-# scriptcontext.doc.Objects.AddPoint(crv_point1)
-# scriptcontext.doc.Objects.AddPoint(crv_point2)
-# scriptcontext.doc.Objects.AddPoint(srf_point1)
-# scriptcontext.doc.Objects.AddPoint(srf_point2)
+transform_object_rhinocommon(tim_srf_2, vec_move)
+transform_object_rhinocommon(tim_axis_2, vec_move)
+
+
+vec_move.Unitize()
+vec_move.Reverse()
+vec_move = vec_move * ((tim1_diameter[tim1_index] / 2) + ((tim2_diameter[tim2_index] / 2) / 2))
+
+transform_object_rhinocommon(tim_srf_2, vec_move)
+transform_object_rhinocommon(tim_axis_2, vec_move)
+
+
+time_end = time.time()
+
+print("Processing Time : {}".format(time_end - time_start))
+
+scriptcontext.doc.Objects.AddBrep(tim_srf_2)
+scriptcontext.doc.Objects.AddCurve(tim_axis_2)
+scriptcontext.doc.Objects.AddLine(tim1_min_p, tim2_min_p)
