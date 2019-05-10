@@ -126,7 +126,7 @@ def pop_dome_evaluate(tim_number, instance_pop, generation_count, generate_range
     brep = Rhino.Geometry.Brep.CreateFromBox(points_list)
 
     copy_from = Rhino.Geometry.Point3d(0, 0, 0)
-    copy_to = Rhino.Geometry.Point3d((generate_range * 2) * instance_pop.pop_index,
+    copy_to = Rhino.Geometry.Point3d((generate_range * 2) * instance_pop.population_id,
                                      (-generate_range * 2) * (generation_count + 1), 0)
     vec_move = copy_to - copy_from
 

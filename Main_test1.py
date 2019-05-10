@@ -3,6 +3,7 @@
 from Generate import Generate
 import rhinoscriptsyntax as rs
 import time
+from operator import itemgetter
 # import copy
 # import random as rnd
 import sys
@@ -20,6 +21,7 @@ import GA.Crossover
 import GA.Method
 import ReGenerate
 
+
 num_timber = 10  # timberの総本数
 num_base_timber = 3
 cantilever_num = 3  # 初期生成時の全体の中でのcantileverの数
@@ -36,8 +38,7 @@ initial_population_draw = True
 flag_high = True  # ソート昇順の場合True　降順の場合False
 
 connect_count = 10  # 接合制約数
-name_list = []  # timberの名前
-prototype_ID = 0  # 試作個体の番号
+id_list = []  # timberのid
 pop_size = pop_num  # 交叉時に生成する個体数
 generate_range = 3000  # 生成可能範囲を指定。（現在は立方体） TODO 立方体以外にも対応したいところ。
 between_draw_rhino = generation_num  # generation_numを割り切れる数で指定すること。
@@ -74,7 +75,7 @@ all_surface = get_obj[1]
 # all_mark = get_obj[2]
 
 for i in range(0, num_timber):
-    name_list.append(i)
+    id_list.append(i)
 
 # Step1: サーフィスと中心線を（個体数*Timberの種類）だけ複製。後でインスタンス変数に取り込むため、リストに格納する
 temp_center_line = Instance.axis_instance(pop_num, center_line)
@@ -95,13 +96,12 @@ for i in range(pop_num):
 
 # スキャンデータを生成クラスに渡し、インスタンス化
 for i in range(pop_num):
-    dic['generate' + str(i)] = Generate(temp_center_line[i], temp_surface[i], name_list, num_timber, prototype_ID,
-                                        timber_num[i])
+    dic['generate' + str(i)] = Generate(temp_center_line[i], temp_surface[i], id_list, num_timber, timber_num[i])
 
 # Step3: 各Generateクラスのインスタンス毎にTimberクラスのインスタンスを作成
 for j in range(pop_num):
     dic['generate' + str(j)].instantiate_timber()  # Timberクラスのインスタンスを作成するGenerateクラスのメソッド
-    dic['generate' + str(j)].pop_index = j  # 個体番号を振る
+    dic['generate' + str(j)].population_id = j  # 個体番号を振る
     # print("pop_index", dic['generate' + str(j)].pop_index)
 
 closed_curve = rs.GetObjects("select closed curves, base timber generated")
@@ -154,19 +154,12 @@ for i in range(pop_num):
 # for i in range(pop_num):
 #     pop = dic['generate' + str(i)]
 #     flag_divide = GA.Method.confirm_pop_divide(num_timber, pop)
-#     print("flag_divide : %s  Time: %s" % flag_divide)
+#     print("flag_divide : %s  Time: '{0}'".format(flag_divide))
+
 
 # Rhinoに描画されるオブジェクとに置き換える。
 if initial_population_draw:
-    for i in range(pop_num):
-        for j in range(num_timber):
-            if layer_flag:
-                a = 'tim'
-                b = str(dic['generate' + str(i)].used_list[j].id)
-                rs.CurrentLayer(a + b)
-
-            sf = scriptcontext.doc.Objects.AddBrep(dic['generate' + str(i)].used_list[j].surface)
-            crv = scriptcontext.doc.Objects.AddCurve(dic['generate' + str(i)].used_list[j].center_line)
+    drawInformatinon.draw_rhino_object(pop_num, num_timber, dic)
 
 t2 = time.time()
 init_generation_time = t2 - t1  # time of Initial Generate
@@ -174,49 +167,11 @@ print("\n")
 print("init generation time: %s" % init_generation_time)
 
 
-# 初期個体が分裂していないか確認。
-for i in range(pop_num):
-    pop = dic['generate' + str(i)]
-    flag_divide = GA.Method.confirm_pop_divide(num_timber, pop)
-    print("flag_divide : %s  Time: '{0}'".format(flag_divide))
+rs.Redraw()
 
 
-# Rhinoに描画されるオブジェクとに置き換える。
-if initial_population_draw:
-    for i in range(pop_num):
-        for j in range(num_timber):
-            if layer_flag:
-                a = 'tim'
-                b = str(dic['generate' + str(i)].used_list[j].id)
-                rs.CurrentLayer(a+b)
-
-            sf = scriptcontext.doc.Objects.AddBrep(dic['generate' + str(i)].used_list[j].surface)
-            crv = scriptcontext.doc.Objects.AddCurve(dic['generate' + str(i)].used_list[j].center_line)
-
-t2 = time.time()
-init_generation_time = t2 - t1  # time of Initial Generate
-print("\n")
-print("init generation time: %s" % init_generation_time)
-
-
-# Step5: 遺伝子情報を生成し、Generateクラスのgene_infoにappendする。
-# all_gene_info = []
-# for i in range(pop_num):
-#     gene_info = []
-#     for j in range(num_timber):
-#         gene_info.append(dic['generate' + str(i)].used_list[j].name)
-#     all_gene_info.append(gene_info)
-#
-# if information_flag:
-#     print("\n")
-#     print("All gene info", all_gene_info)
-#
-# for i in range(pop_num):
-#     for j in range(num_timber):
-#         dic['generate' + str(i)].gene_info.append(dic['generate' + str(i)].used_list[j].name)
-
-
-# Main Loop 開始
+# 指定した世代数GAのループを繰り返す。
+# ----------------------------------------------------------------------------------------------------------------------
 for main_loop in range(generation_num):
 
     # Step6:  # EVALUATION　評価
@@ -274,11 +229,18 @@ for main_loop in range(generation_num):
         for j in range(num_timber):
             for k in range(num_timber):
                 if dic['generate' + str(i)].used_list[k].id == j:
-                    list_partner_tim_prior_generation[i][j].extend(dic['generate' + str(i)].used_list[j].partner_tim)
+                    list_partner_tim_prior_generation[i][j].extend(dic['generate' + str(i)].used_list[k].partner_tim)
                     break
     print("list_partner_tim_prior_generation", list_partner_tim_prior_generation)
 
+    # 現世代の再生成開始。
+    # ------------------------------------------------------------------------------------------------------------------
     for loop in range(pop_size):
+
+        pop_generate_start_time = time.time()
+
+        pop_regenerate = dic['generate' + str(loop)]
+
         if information_flag:
             print("\n")
             print("start regeneration No.%s" % loop)
@@ -292,10 +254,10 @@ for main_loop in range(generation_num):
 
         # 2点交叉　Generateクラス変数の更新とlist_temp_gene_timに新しく生成した遺伝子情報をappendする。 継承する材の番号が格納されたリストをreturnする
         # already_regenerate = GA.Crossover.two_point_crossover(num_timber, divide_range, pop_1, pop_2)
-        already_regenerate = GA.Crossover.random_chunk_crossover(num_timber, divide_range, pop_1)
+        pop_regenerate.already_regenerate_tim_id = GA.Crossover.random_chunk_crossover(num_timber, divide_range, pop_1)
 
         # pop_2に関して継承する材を決定するアルゴリズム add
-        decide_inheritance_num_list, connect_list = GA.Method.decide_inheritance_tim_connected(pop_1, pop_2, already_regenerate,
+        decide_inheritance_num_list, connect_list = GA.Method.decide_inheritance_tim_connected(pop_1, pop_2, pop_regenerate.already_regenerate_tim_id,
                                                                                       generate_range)
         # print('\n')
         # print('connect_list', connect_list)
@@ -313,7 +275,7 @@ for main_loop in range(generation_num):
         GA.Method.RenewalPop2(pop_1, pop_2, decide_inheritance_num_list)
 
         # select_domain_listの更新。　形態を引き継いでいる材の接合ドメインの更新を行う。前世代では使用していたが、空席になるドメインが生じるはずなので
-        GA.Method.selectDomainRenewal(already_regenerate, num_timber, pop_1)
+        GA.Method.selectDomainRenewal(pop_regenerate.already_regenerate_tim_id, num_timber, pop_1)
 
         # select_domain_listの更新2.
         GA.Method.selectDomainRenewal2(decide_inheritance_num_list, num_timber, pop_1)
@@ -321,13 +283,28 @@ for main_loop in range(generation_num):
         # print('inheritance form 1', already_regenerate)
         # print('inheritance form 2', decide_inheritance_num_list)
 
+        for i in range(num_timber):
+            for j in range(len(list_temp_partner_tim[loop][i])):
+                if list_temp_partner_tim[loop][i][j] == i:
+                    raise Exception('miss renewal partner_tim')
+
         # そのまま継承する材をMoveObjectでコピー、partnerを更新する
-        GA.Method.move_and_pop_update_for_already(already_regenerate, pop_1, generate_range, generation_num, between_draw_rhino,
+        GA.Method.move_and_pop_update_for_already(pop_regenerate.already_regenerate_tim_id, pop_1, generate_range, generation_num, between_draw_rhino,
                                        main_loop, loop, list_temp_partner_tim)
+
+        for i in range(num_timber):
+            for j in range(len(list_temp_partner_tim[loop][i])):
+                if list_temp_partner_tim[loop][i][j] == i:
+                    raise Exception('miss renewal partner_tim')
 
         # そのまま継承する材をMoveObjectでコピーし、partnerを更新する。　add 190220
         GA.Method.move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_1, pop_2, generate_range, generation_num,
                                         between_draw_rhino, main_loop, loop, list_temp_partner_tim)
+
+        for i in range(num_timber):
+            for j in range(len(list_temp_partner_tim[loop][i])):
+                if list_temp_partner_tim[loop][i][j] == i:
+                    raise Exception('miss renewal partner_tim')
 
         # pop_2の材の位相関係を継承しながら再生成を行う。
         # for i in range(len(connect_list)):
@@ -336,18 +313,18 @@ for main_loop in range(generation_num):
         #     already_regenerate.append(connect_list[i][0])
         # print('check del inheritance form', decide_inheritance_num_list)
 
-        already_regenerate.extend(decide_inheritance_num_list)  # add 190220
+        pop_regenerate.already_regenerate_tim_id.extend(decide_inheritance_num_list)  # add 190220
         # print('check already_regenerate', already_regenerate)
         # print("already_regenerate_list : %s"%(already_regenerate))
         # for i in range(len(connect_list)):
         #     decide_inheritance_num_list.append(connect_list[i][0])
-
-        yet_regenerate = []
+        pop_regenerate.yet_regenerate_tim_id = []
         for i in range(num_timber):
-            if i in already_regenerate:
+            if i in pop_regenerate.already_regenerate_tim_id:
                 pass
             else:
-                yet_regenerate.append(i)
+                pop_regenerate.yet_regenerate_tim_id.append(i)
+
         # yet_regenerate.extend(pop_1.temp_yet_regenerate)
 
         # print("before yet_regenerate_list : %s"%(yet_regenerate))  # add 190220
@@ -366,26 +343,35 @@ for main_loop in range(generation_num):
 
         # print("check_timber_partner1", check_timber_partner1)
 
+        # connect_listの接合関係をlist_temp_partner_timに組み込む。
+        for i in range(len(connect_list)):
+            tim_id = connect_list[i][1]
+            list_temp_partner_tim[loop][tim_id].append(connect_list[i][0])
+            list_temp_partner_tim[loop][connect_list[i][0]].append(connect_list[i][1])
+
+        for i in range(num_timber):
+            for j in range(len(list_temp_partner_tim[loop][i])):
+                if list_temp_partner_tim[loop][i][j] == i:
+                    raise Exception('miss renewal partner_tim')
+
         # pop1のpartner_listを更新する。
         for i in range(num_timber):
             for j in range(num_timber):
-                if pop_1.used_list[j].id == i:
-                    pop_1.used_list[j].partner_tim = []
-                    pop_1.used_list[j].partner_tim.extend(list_temp_partner_tim[loop][i])
+                if pop_1.used_list[i].id == j:
+                    pop_1.used_list[i].partner_tim = []
+                    pop_1.used_list[i].partner_tim.extend(list_temp_partner_tim[loop][j])
                     break
 
-        # partner_timの更新確認
-        check_timber_partner2 = []
-        for i in range(num_timber):
+        # 再生成されていないことになった部材のpartner_timを空リストにする。
+        for i in range(len(pop_regenerate.yet_regenerate_tim_id)):
+            tim_id = pop_regenerate.yet_regenerate_tim_id[i]
             for j in range(num_timber):
-                if pop_1.used_list[j].id == i:
-                    check_timber_partner2.append(pop_1.used_list[j].partner_tim)
-                    break
-        # print("check temp timber partner : %s" % (check_timber_partner2))
-        # print("list_temp_partner_tim", list_temp_partner_tim)
+                if pop_1.used_list[j].id == tim_id:
+                    pop_1.used_list[j].partner_tim = []
+
 
         # 再生成のプロセス
-        ReGenerate.regenerate(already_regenerate, yet_regenerate, pop_1, pop_2, num_timber, limit_degree,
+        ReGenerate.regenerate(pop_regenerate.already_regenerate_tim_id, pop_regenerate.yet_regenerate_tim_id, pop_1, pop_2, num_timber, limit_degree,
                               generation_num, main_loop, loop, between_draw_rhino, list_temp_partner_tim,
                               mutation_ratio)
 
@@ -396,42 +382,6 @@ for main_loop in range(generation_num):
 
         print("flag_divide : %s  Time: %s" % (flag_divide, t2_flag_divide-t1_flag_divede))
 
-        # partner_timの確認
-        check_timber_partner3 = []
-        for i in range(num_timber):
-            for j in range(num_timber):
-                if pop_1.used_list[j].id == i:
-                    check_timber_partner3.append(pop_1.used_list[j].partner_tim)
-                    break
-
-        if check_timber_partner3 == list_temp_partner_tim[loop]:
-            pass
-        else:
-            raise ValueError('check_timber_partner3 & list_temp_partner_tim is not same, did not working')
-
-        # pop_1のpartner_timを再生成前の状態に戻す。
-        for i in range(num_timber):
-            for j in range(num_timber):
-                if pop_1.used_list[j].id == i:
-                    pop_1.used_list[j].partner_tim = []
-                    pop_1.used_list[j].partner_tim.extend(list_partner_tim_prior_generation[pop_1.population_num][i])
-                    break
-
-        # partner_timの更新確認 check_timber_partner1と一致している必要がある。
-        # check_timber_partner4 = []
-        # for i in range(num_timber):
-        #     for j in range(num_timber):
-        #         if pop_1.used_list[j].name == i:
-        #             check_timber_partner4.append(pop_1.used_list[j].partner_tim)
-        #             break
-        #
-        # print("check_timber_partner4", check_timber_partner4)
-
-        # if check_timber_partner1 == check_timber_partner4:
-        #     pass
-        # else:
-        #     raise ValueError('check_timber_partner1 & check_timber_partner4 is not same')
-
         # Generateクラスインスタンス変数の更新
         # 戻す。　　次世代の個体生成前に保持していたGenerateクラスの変数に戻す。
         GA.Method.RenewalInstanceInformationSameGeneration(pop_1, temp_list_srf_for_next_generation,
@@ -440,9 +390,18 @@ for main_loop in range(generation_num):
                                                            list_srf_temp, list_center_line_temp,
                                                            list_select_domain_temp, loop)
 
-        rs.EnableRedraw(True)
-        rs.Redraw()
-        rs.EnableRedraw(False)
+        # pop_1のpartner_timを再生成前の状態に戻す。
+        for i in range(num_timber):
+            for j in range(num_timber):
+                if pop_1.used_list[i].id == j:
+                    pop_1.used_list[i].partner_tim = []
+                    pop_1.used_list[i].partner_tim.extend(list_partner_tim_prior_generation[pop_1.population_id][j])
+                    break
+
+        pop_generate_end_time = time.time()
+        cul_time = pop_generate_end_time - pop_generate_start_time
+
+        print('GENERATION: {}  POP: {}  TIME: {}'.format(main_loop, pop_regenerate.population_id, cul_time))
 
         # print("list_temp_partner_tim", list_temp_partner_tim)
         # input("stop")
@@ -463,9 +422,9 @@ for main_loop in range(generation_num):
     for i in range(pop_num):
         for j in range(num_timber):
             for k in range(num_timber):  # TODO
-                if dic['generate' + str(i)].used_list[k].id == j:
-                    dic['generate' + str(i)].used_list[k].partner_tim = []
-                    dic['generate' + str(i)].used_list[k].partner_tim.extend(list_temp_partner_tim[i][j])
+                if dic['generate' + str(i)].used_list[j].id == k:
+                    dic['generate' + str(i)].used_list[j].partner_tim = []
+                    dic['generate' + str(i)].used_list[j].partner_tim.extend(list_temp_partner_tim[i][k])
 
             # print("update partner_tim", dic['generate' + str(i)].used_list[j].partner_tim)
 
@@ -548,6 +507,17 @@ print("\n")
 print("EVALUATE : result --- %s" % evaluate_list)
 print("Processing Time : %s" % (program_finish - program_start))
 
+for i in range(pop_num):
+    list = []
+    for j in range(num_timber):
+        temp = []
+        temp.append(dic['generate' + str(i)].used_list[j].id)
+        temp.append(dic['generate' + str(i)].used_list[j].partner_tim)
+
+        list.append(temp)
+
+    list.sort(key=itemgetter(0))
+    print('Pop ID {} : {}'.format(i, list))
 
 # グラフに評価値の推移を描画
 drawInformatinon.drawEvaluateValue(evaluate_list)

@@ -145,6 +145,16 @@ def two_point_crossover(num_timber, divide_range, pop1_instance, pop2_instance, 
 
 
 def random_chunk_crossover(num_timber, divide_range, pop1):
+    '''
+    ランダムに次世代に引き継ぐ部材数を決定する。接合部材関係をたどることで、
+    塊として次世代に継承することを可能にしている。
+    :param num_timber:
+    :param divide_range:
+    :param pop1:
+    :return:
+    '''
+    
+    # 次世代への継承部材数を決定する。
     inheritance_num = rnd.randint(divide_range - 1, num_timber - 1)
 
     select_tim_ids = []
@@ -187,8 +197,8 @@ def random_chunk_crossover(num_timber, divide_range, pop1):
         if len(pop1.used_list[index].partner_tim) >= 1:
             choice_id = rnd.choice(pop1.used_list[index].partner_tim)
         else:
-            print("partner_tim", pop1.used_list[index].partner_tim)
-            print("")
+            pass
+            # print("partner_tim", pop1.used_list[index].partner_tim)
 
         for k in range(num_timber):
             if pop1.used_list[k].id == choice_id:

@@ -172,8 +172,8 @@ def decide_inheritance_timber(pop_instance1, pop_instance2, already_regenerate_l
     connect_list = []
     move_pop2_num_list = []
 
-    pop_num_1 = pop_instance1.population_num  # ttm change pop_index -> population_num
-    pop_num_2 = pop_instance2.population_num
+    pop_num_1 = pop_instance1.population_id  # ttm change pop_index -> population_id
+    pop_num_2 = pop_instance2.population_id
     num_range = pop_num_1 - pop_num_2
 
     move_from_p = Rhino.Geometry.Point3d(0,0,0)
@@ -266,8 +266,8 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
     # pop2をpop1の位置に動かすことで接触判定を行えるようにしている。
     move_pop2_num_list = []
 
-    pop_num_1 = pop_instance1.population_num  # ttm change pop_index -> population_num
-    pop_num_2 = pop_instance2.population_num
+    pop_num_1 = pop_instance1.population_id  # ttm change pop_index -> population_id
+    pop_num_2 = pop_instance2.population_id
     num_range = pop_num_1 - pop_num_2
 
     move_from_p = Rhino.Geometry.Point3d(0, 0, 0)
@@ -285,7 +285,7 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
     list_srf = []
     # list_axis = []
     list_section_length = []
-    list_timber_num = []
+    list_tim_id = []
     for i in range(len(move_pop2_num_list)):
         move_index = move_pop2_num_list[i]
         for j in range(len(pop_instance2.used_list)):
@@ -298,7 +298,7 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
                 list_srf.append(srf)
                 # list_axis.append(axis)
                 # list_section_length.append(pop_instance2.used_list[j].section_length)
-                list_timber_num.append(pop_instance2.used_list[j].id)
+                list_tim_id.append(pop_instance2.used_list[j].id)
 
     # surfaceを用いた接触判定をおこなう。
     for i in range(len(list_srf)):
@@ -336,8 +336,8 @@ def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regen
                 continue
 
         if intersection_flag:
-            inherit_timber_id_list.append(list_timber_num[i])
-            connect_list.append([list_timber_num[i], partner_tim_name])
+            inherit_timber_id_list.append(list_tim_id[i])
+            connect_list.append([list_tim_id[i], partner_tim_name])
         else:
             pass
 
@@ -365,7 +365,7 @@ def move_and_pop_update_for_already(already_regenerate, pop_instance, generate_r
             if already_regenerate[i] == pop_instance.used_list[j].id:
                 tim_move = pop_instance.used_list[j]
 
-                pop_index = pop_instance.pop_index
+                pop_index = pop_instance.population_id
                 move_from = Rhino.Geometry.Point3d(pop_index * 2 * generate_range, 0, 0)
                 move_to = Rhino.Geometry.Point3d(loop * generate_range * 2, -2 * generate_range, 0)
                 # vec_move = rs.VectorCreate(move_to, move_from)
@@ -395,6 +395,7 @@ def move_and_pop_update_for_already(already_regenerate, pop_instance, generate_r
                     pop_instance.used_list[tim_index].partner_tim[j])
 
 
+
 def move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_instance1, pop_instance2, generate_range, generation_num,
                          between_draw_rhino, main_loop, loop, list_temp_partner_tim):
 
@@ -404,8 +405,8 @@ def move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_instanc
             if decide_inheritance_num_list[i] == pop_instance1.used_list[j].id:
                 tim_move = pop_instance1.used_list[j]
 
-                pop_index1 = pop_instance1.pop_index
-                pop_index2 = pop_instance2.pop_index
+                pop_index1 = pop_instance1.population_id
+                pop_index2 = pop_instance2.population_id
 
                 move_from = Rhino.Geometry.Point3d(pop_index2 * 2 * generate_range, 0, 0)
                 move_to = Rhino.Geometry.Point3d(loop * generate_range * 2, -2 * generate_range, 0)
