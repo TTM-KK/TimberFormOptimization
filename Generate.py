@@ -1,59 +1,40 @@
 # -*- coding:utf-8 -*-
 
 from Timber import Timber
-import rhinoscriptsyntax as rs
 import random as rnd
-# import Optimization as opt
-# import Drilling as drill
-# import Detection as detection
 import math  # ttm add 181003
-# import copy  # ttm add 181003
-# import time
 from forGenerate import timberMethod as timber
 import Rhino
-import scriptcontext
 from forGenerate import RhinoCommonOriginalMethods as oriRhino
 
 
 class Generate:
 
     # 初期化
-    def __init__(self, center_line, surface, name, num_all_timber, prototype, population_num):
+    def __init__(self, center_line, surface, id, sum_timber, population_id):
         self.center_line_list = center_line  # center line list
         self.surface_list = surface  # surface list
-        self.name_list = name  # timber name list
-        self.prototype_name = prototype  # 試作個体のID
-        self.num_all_timber = num_all_timber  # timberの総本数
+        self.id_list = id  # timber name list
+        self.sum_timber = sum_timber  # timberの総本数
         self.timber_list = []  # まだ使用していないtimberのリスト
         self.used_list = []  # 使用したtimberのリスト
-        self.not_use_list = []  # 制約を満たした使用しないtimberリスト
-        self.count_cantilever = 0  # 生成の中で片持ちを行った回数
-        self.count_bridge = 0  # 生成の中で掛けるを行った回数
+        self.population_id = population_id
 
-        self.init_used_list = []
-        self.mark_line_list = None  # two mark line
-        self.population_num = population_num
-        self.gene_list = []  # 遺伝子となる材が格納される　ttm add 181003
-        self.temp_gene_list = []
-
-        self.gene_info = []
         self.evaluation = 0
-        self.pop_index = 0
-        self.temp_used_list = []  # regenerateの過程において、一時的にregenerateした材番号を保存しておくリスト
-        self.temp_yet_regenerate = []
-        self.flag_layer_change = False
-
+        self.yet_regenerate_tim_id = []  # 再生成されずにいる部材のidを格納
+        self.already_regenerate_tim_id = []  # 再生成すでにされている部材のidを格納する。
+    
     def instantiate_timber(self):
 
         # スキャンデータをtimberクラスのオブジェクトにする
-        for i in range(0, self.num_all_timber):
-            timber = Timber(self.center_line_list[i], self.surface_list[i], self.name_list[i])  # インスタンス生成
+        for i in range(0, self.sum_timber):
+            timber = Timber(self.center_line_list[i], self.surface_list[i], self.id_list[i])  # インスタンス生成
             self.timber_list.append(timber)  # timber_listに追加
 
             # 中心線の長さを取得する
-            timber.mesureLength_RhinoCommon()
-            timber.mesureSectionLength()
-            timber.initDistance(self.num_all_timber)
+            timber.measure_length()
+            timber.measure_section_length()
+            timber.init_tim_distance(self.sum_timber)
 
     def generate_ground_init(self, generate_range, objects_curve=None, objects_point=None):
         """
@@ -213,8 +194,8 @@ class Generate:
             each_domain_length1 = (domain_crv1[1] - domain_crv1[0]) / divide_domain_num
             each_domain_length2 = (domain_crv2[1] - domain_crv2[0]) / divide_domain_num
 
-            select_domain1 = used_timber.selectSurfaceDomain_2()
-            select_domain2 = unused_timber.selectSurfaceDomain_2()
+            select_domain1 = used_timber.select_surface_domain()
+            select_domain2 = unused_timber.select_surface_domain()
 
             # select_domain1 = 2
             # select_domain2 = rnd.randint(0, 9)
@@ -361,15 +342,14 @@ class Generate:
         # used_timber.center_line = cr2
 
         # domainの更新
-        used_timber.select_domain_list.append([select_domain1, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain2, used_timber.name])
+        used_timber.select_domain_list.append([select_domain1, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain2, used_timber.id])
 
         # 接合した相手の木材のIDを格納。
-        used_timber.partner_tim.append(unused_timber.name)
-        if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber.name)
-        else:
-            raise ValueError("unused_timber partner must to be [].")
+        used_timber.partner_tim.append(unused_timber.id)
+        unused_timber.partner_tim.append(used_timber.id)
+        if used_timber.id == unused_timber.id:
+            raise Exception('partner tim renewal fail')
 
         # 木材同士の間隔の最小値を計測。
         if len(self.used_list) == 0:
@@ -387,8 +367,6 @@ class Generate:
         else:
             self.used_list.append(unused_timber)
             self.timber_list.pop(y)
-
-        self.count_cantilever = self.count_cantilever + 1
 
         # end_time = time.time()
         # print("Processing Cantilever_RhinoCommon Time : %s" % (end_time - start_time))
@@ -425,8 +403,8 @@ class Generate:
         each_domain_length1 = (domain_crv1[1] - domain_crv1[0]) / divide_domain_num
         each_domain_length2 = (domain_crv2[1] - domain_crv2[0]) / divide_domain_num
 
-        select_domain1 = used_timber.selectSurfaceDomain_2()
-        select_domain2 = unused_timber.selectSurfaceDomain_2()
+        select_domain1 = used_timber.select_surface_domain()
+        select_domain2 = unused_timber.select_surface_domain()
 
         # select_domain1 = 2
         # select_domain2 = rnd.randint(0, 9)
@@ -545,28 +523,6 @@ class Generate:
         else:
             return False
 
-        # 描画するかどうか
-        if generation_num - 1 == loop_num:
-            if self.flag_layer_change:
-                a = 'tim'
-                b = str(unused_timber.name)
-                # print("unused_timber.name", unused_timber.name)
-                rs.CurrentLayer(a + b)
-
-        #
-            cr = scriptcontext.doc.Objects.AddCurve(tim2_center_crv)
-            sf = scriptcontext.doc.Objects.AddBrep(tim2_srf)
-        #
-        # if generation_num - 1 != loop_num and generation_num % between_draw_rhino == 0:
-        #     if self.flag_layer_change:
-        #         a = 'tim'
-        #         b = str(unused_timber.name)
-        #         # print("unused_timber.name", unused_timber.name)
-        #         rs.CurrentLayer(a + b)
-        #
-        #
-        #     cr = scriptcontext.doc.Objects.AddCurve(tim2_center_crv)
-        #     sf = scriptcontext.doc.Objects.AddBrep(tim2_srf)
 
         # 以下更新
         # objectの更新
@@ -575,24 +531,19 @@ class Generate:
         # unused_timber.center_line = tim2_srf
 
         # domainの更新
-        used_timber.select_domain_list.append([select_domain1, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain2, used_timber.name])
+        used_timber.select_domain_list.append([select_domain1, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain2, used_timber.id])
 
         # partnerの更新
-        if unused_timber.name in used_timber.partner_tim:
-            raise ValueError("partner update has not gone well cuz partner already in partner_tim list")
-        else:
-            used_timber.partner_tim.append(unused_timber.name)
-
-        if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber.name)
-        else:
-            raise ValueError("unused_timber partner must to be [].")
+        used_timber.partner_tim.append(unused_timber.id)
+        unused_timber.partner_tim.append(used_timber.id)
+        if used_timber.id == unused_timber.id:
+            raise Exception('partner_tim renewal fail')
 
         # 木材同士の間隔の最小値を計測。
         for i in range(len(self.used_list)):
             already_exist_timber = self.used_list[i]
-            already_exist_timber_name = self.used_list[i].name
+            already_exist_timber_name = self.used_list[i].id
             if already_exist_timber_name in already_regenerated_list:
                 timber.distanceBetweenTimber_RhinoCommon(already_exist_timber, unused_timber)
 
@@ -628,7 +579,7 @@ class Generate:
                     y = rnd.randint(0, len(self.timber_list) - 1)
                     unused_timber = self.timber_list[y]
 
-                    length_of_between = used_timber1.tim_distance[used_timber2.name][0]
+                    length_of_between = used_timber1.tim_distance[used_timber2.id][0]
                     length_of_timber = unused_timber.timber_length
                     # print("length_of_between", length_of_between)
                     # print("length_of_timber", length_of_timber)
@@ -677,8 +628,8 @@ class Generate:
                 for select_domain_loop in range(200):
 
                     # GL_01 に材が食い込むなら再選択
-                    select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
-                    select_domain_2 = used_timber2.selectSurfaceDomain_2()
+                    select_domain_1 = used_timber1.select_surface_domain()  # select_domain はドメインの値をintで返される。
+                    select_domain_2 = used_timber2.select_surface_domain()
 
                     # print("select_domain_1", select_domain_1)
                     # print("select_domain_2", select_domain_2)
@@ -878,23 +829,23 @@ class Generate:
         # 使用domainの更新のための値
         select_domain_3_end = abs(int(t_ // domain_range3))
         # print("select_domain_3_end : %s" % (select_domain_3_end))
-        used_timber1.select_domain_list.append([select_domain_1, unused_timber.name])
-        used_timber2.select_domain_list.append([select_domain_2, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.name])
-        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.name])
+        used_timber1.select_domain_list.append([select_domain_1, unused_timber.id])
+        used_timber2.select_domain_list.append([select_domain_2, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.id])
+        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.id])
 
         # partner_tim 更新
-        if unused_timber.name in used_timber1.partner_tim or unused_timber.name in used_timber2.partner_tim:
-            raise ValueError("update of partner_tim has not gone well cuz partner already in partner_list")
-        else:
-            used_timber1.partner_tim.append(unused_timber.name)  # add the partner timber name ---> name is number
-            used_timber2.partner_tim.append(unused_timber.name)
 
-        if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber1.name)
-            unused_timber.partner_tim.append(used_timber2.name)
-        else:
-            raise ValueError("unused_timber partner must to be [].")
+        used_timber1.partner_tim.append(unused_timber.id)  # add the partner timber name ---> name is number
+        used_timber2.partner_tim.append(unused_timber.id)
+
+        unused_timber.partner_tim.append(used_timber1.id)
+        unused_timber.partner_tim.append(used_timber2.id)
+
+        if used_timber1.id == unused_timber.id:
+            raise Exception('partner_tim renewal fail')
+        if used_timber2.id == unused_timber.id:
+            raise Exception('partner_tim renewal fail')
 
         for i in range(len(self.used_list)):
             timber.distanceBetweenTimber_RhinoCommon(unused_timber, self.used_list[i])
@@ -902,7 +853,6 @@ class Generate:
         self.used_list.append(unused_timber)
         self.timber_list.pop(y)
 
-        self.count_bridge = self.count_bridge + 1
 
         # end_time = time.time()
         # print("Processing bridge_RhinoCommon Time : %s" % (end_time - start_time))
@@ -937,7 +887,7 @@ class Generate:
         tim3_center_crv = self.used_list[tim_add_num].center_line
 
         # bridge可能か判断　その１
-        distance = used_timber1.tim_distance[used_timber2.name][0]
+        distance = used_timber1.tim_distance[used_timber2.id][0]
         if distance + 100 > unused_timber.timber_length:
             # print("reselect timber cuz lack of length: in bridge")
             return False
@@ -959,8 +909,8 @@ class Generate:
 
             select_domain_3_start = 0  # TODO 今のところ固定値
             for select_domain_loop in range(200):
-                select_domain_1 = used_timber1.selectSurfaceDomain_2()  # select_domain はドメインの値をintで返される。
-                select_domain_2 = used_timber2.selectSurfaceDomain_2()
+                select_domain_1 = used_timber1.select_surface_domain()  # select_domain はドメインの値をintで返される。
+                select_domain_2 = used_timber2.select_surface_domain()
 
                 # print("select_domain_1", select_domain_1)
                 # print("select_domain_2", select_domain_2)
@@ -1130,27 +1080,6 @@ class Generate:
             print('GL distance is not satisfied')
             return False
 
-        if generation_num - 1 == loop_num:
-            if self.flag_layer_change:
-                # layerを変更して正しいレイヤーへ
-                a = 'tim'
-                b = str(unused_timber.name)
-                # print("unused_timber.name", unused_timber.name)
-                rs.CurrentLayer(a + b)
-
-            cr = scriptcontext.doc.Objects.AddCurve(tim3_center_crv)
-            sf = scriptcontext.doc.Objects.AddBrep(tim3_srf)
-
-        # if generation_num - 1 != loop_num and generation_num % between_draw_rhino == 0:
-        #     if self.flag_layer_change:
-        #         a = 'tim'
-        #         b = str(unused_timber.name)
-        #         # print("unused_timber.name", unused_timber.name)
-        #         rs.CurrentLayer(a + b)
-        #
-        #     cr = scriptcontext.doc.Objects.AddCurve(tim3_center_crv)
-        #     sf = scriptcontext.doc.Objects.AddBrep(tim3_srf)
-
         # 以下更新
         # unused_timber.surface = sf
         # unused_timber.center_line = cr
@@ -1164,28 +1093,26 @@ class Generate:
         # 使用domainの更新のための値
         select_domain_3_end = abs(int(t_ // domain_range3))
         # print("select_domain_3_end : %s" % (select_domain_3_end))
-        used_timber1.select_domain_list.append([select_domain_1, unused_timber.name])
-        used_timber2.select_domain_list.append([select_domain_2, unused_timber.name])
-        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.name])
-        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.name])
+        used_timber1.select_domain_list.append([select_domain_1, unused_timber.id])
+        used_timber2.select_domain_list.append([select_domain_2, unused_timber.id])
+        unused_timber.select_domain_list.append([select_domain_3_start, used_timber1.id])
+        unused_timber.select_domain_list.append([select_domain_3_end, used_timber2.id])
 
         # partner_timの更新
-        if unused_timber.name in used_timber1.partner_tim or unused_timber.name in used_timber2.partner_tim:
-            raise ValueError("update of partner_tim has not gone well cuz partner already in partner_list")
-        else:
-            used_timber1.partner_tim.append(unused_timber.name)
-            used_timber2.partner_tim.append(unused_timber.name)
+        used_timber1.partner_tim.append(unused_timber.id)
+        used_timber2.partner_tim.append(unused_timber.id)
 
-        if len(unused_timber.partner_tim) == 0:
-            unused_timber.partner_tim.append(used_timber1.name)
-            unused_timber.partner_tim.append(used_timber2.name)
-        else:
-            raise ValueError("unused_timber partner must to be [].")
+        unused_timber.partner_tim.append(used_timber1.id)
+        unused_timber.partner_tim.append(used_timber2.id)
+        if unused_timber.id == used_timber1.id:
+            raise Exception('partner_tim renewal fail')
+        if unused_timber.id == used_timber2.id:
+            raise Exception('partner_tim renewal fail')
 
         # 木材同士の最短距離を計算する。
         for i in range(len(self.used_list)):
             already_exist_timber = self.used_list[i]
-            already_exist_timber_name = self.used_list[i].name
+            already_exist_timber_name = self.used_list[i].id
             if already_exist_timber_name in already_regenerated_list:
                 timber.distanceBetweenTimber_RhinoCommon(already_exist_timber, unused_timber)
 
@@ -1194,162 +1121,162 @@ class Generate:
         return True
 
     # 接合数を確かめ、それに応じてlayer分けする
-    def checkjointCount(self, run_time):
+    # def checkjointCount(self, run_time):
+    #
+    #     # add layer
+    #     prototype = "prototype" + str(self.prototype_name)
+    #     parent_layer = rs.AddLayer(prototype, [0, 0, 0], True, False, None)
+    #     not_use_list = rs.AddLayer("not_use_list", [0, 0, 0], True, False, parent_layer)
+    #     used_list = rs.AddLayer("used_list", [0, 0, 0], True, False, parent_layer)
+    #     text_layer = rs.AddLayer("Text", [0, 0, 0], True, False, parent_layer)
+    #     rs.AddLayer("collision", [255, 0, 0], True, False, parent_layer)
+    #
+    #     # draw text
+    #     text_content = prototype + "\n" \
+    #                    + "Number of timber = " + str(self.sum_timber) + "\n" \
+    #                    + "Run time: " + str(run_time)
+    #
+    #     text_coordinate = [5000 * self.prototype_name, 330, 0]
+    #     text = rs.AddText(text_content, text_coordinate, 100, "Arial")
+    #     rs.ObjectLayer(text, text_layer)
+    #
+    #     # used_list
+    #     for i in range(0, len(self.used_list)):
+    #         if i == 0:
+    #             # print("#######################################################")
+    #             # print("used_list : %s timber" %(len(self.used_list)))
+    #             # print("%s : Number of joint = %s | Select surface domain = %s | Joint name = %s"
+    #             #       % (self.used_list[i].name, self.used_list[i].num_joint,
+    #             #          self.used_list[i].select_domain_list, self.used_list[i].joint_name_list))
+    #
+    #             # layer分けをする
+    #             Parent_layer = used_list
+    #             child1_layer = self.used_list[i].id
+    #
+    #             # child1 layer
+    #             timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
+    #
+    #             # child2 layer
+    #             surface = rs.AddLayer("surface", [220, 220, 220], True, False, timber_ID)
+    #             center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
+    #             drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
+    #
+    #             rs.ObjectLayer(self.used_list[i].surface, surface)
+    #             rs.ObjectLayer(self.used_list[i].center_line, center_line)
+    #             for j in range(0, len(self.used_list[i].drill_line_list)):
+    #                 rs.ObjectLayer(self.used_list[i].drill_line_list[j], drill_line)
+    #
+    #         else:
+    #             # # print("%s : Number of joint = %s | Select surface domain = %s | Joint name = %s"
+    #             #       % (self.used_list[i].name, self.used_list[i].num_joint,
+    #             #          self.used_list[i].select_domain_list, self.used_list[i].joint_name_list))
+    #
+    #             # layer分けをする
+    #             Parent_layer = used_list
+    #             child1_layer = self.used_list[i].id
+    #
+    #             # child1 layer
+    #             timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
+    #
+    #             # child2 layer
+    #             surface = rs.AddLayer("surface", [220, 220, 220], True, False, timber_ID)
+    #             center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
+    #             drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
+    #
+    #             rs.ObjectLayer(self.used_list[i].surface, surface)
+    #             rs.ObjectLayer(self.used_list[i].center_line, center_line)
+    #             for j in range(0, len(self.used_list[i].drill_line_list)):
+    #                 rs.ObjectLayer(self.used_list[i].drill_line_list[j], drill_line)
+    #
+    #     # do not use list
+    #     for i in range(0, len(self.not_use_list)):
+    #         if i == 0:
+    #             # print("-------------------------------------------------------")
+    #             # print("not_use_list : %s timber" %(len(self.not_use_list)))
+    #             # print("%s :Number of joint = %s | Select surface domain = %s | Joint name = %s"
+    #             #       % (self.not_use_list[i].name, self.not_use_list[i].num_joint,
+    #             #          self.not_use_list[i].select_domain_list, self.not_use_list[i].joint_name_list))
+    #
+    #             # layer分けをする
+    #             Parent_layer = not_use_list
+    #             child1_layer = self.not_use_list[i].id
+    #
+    #             # child1 layer
+    #             timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
+    #
+    #             # child2 layer
+    #             surface = rs.AddLayer("surface", [255, 0, 0], True, False, timber_ID)
+    #             center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
+    #             drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
+    #
+    #             rs.ObjectLayer(self.not_use_list[i].surface, surface)
+    #             rs.ObjectLayer(self.not_use_list[i].center_line, center_line)
+    #             for j in range(0, len(self.not_use_list[i].drill_line_list)):
+    #                 rs.ObjectLayer(self.not_use_list[i].drill_line_list[j], drill_line)
+    #
+    #         else:
+    #             # print("%s : Number of joint = %s | Select surface domain = %s | Joint name = %s"
+    #             #       % (self.not_use_list[i].name, self.not_use_list[i].num_joint,
+    #             #          self.not_use_list[i].select_domain_list, self.not_use_list[i].joint_name_list))
+    #
+    #             # layer分けをする
+    #             Parent_layer = not_use_list
+    #             child1_layer = self.not_use_list[i].id
+    #
+    #             # child1 layer
+    #             timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
+    #
+    #             # child2 layer
+    #             surface = rs.AddLayer("surface", [255, 0, 0], True, False, timber_ID)
+    #             center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
+    #             drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
+    #
+    #             rs.ObjectLayer(self.not_use_list[i].surface, surface)
+    #             rs.ObjectLayer(self.not_use_list[i].center_line, center_line)
+    #             for j in range(0, len(self.not_use_list[i].drill_line_list)):
+    #                 rs.ObjectLayer(self.not_use_list[i].drill_line_list[j], drill_line)
 
-        # add layer
-        prototype = "prototype" + str(self.prototype_name)
-        parent_layer = rs.AddLayer(prototype, [0, 0, 0], True, False, None)
-        not_use_list = rs.AddLayer("not_use_list", [0, 0, 0], True, False, parent_layer)
-        used_list = rs.AddLayer("used_list", [0, 0, 0], True, False, parent_layer)
-        text_layer = rs.AddLayer("Text", [0, 0, 0], True, False, parent_layer)
-        rs.AddLayer("collision", [255, 0, 0], True, False, parent_layer)
-
-        # draw text
-        text_content = prototype + "\n" \
-                       + "Number of timber = " + str(self.num_all_timber) + "\n" \
-                       + "Run time: " + str(run_time)
-
-        text_coordinate = [5000 * self.prototype_name, 330, 0]
-        text = rs.AddText(text_content, text_coordinate, 100, "Arial")
-        rs.ObjectLayer(text, text_layer)
-
-        # used_list
-        for i in range(0, len(self.used_list)):
-            if i == 0:
-                # print("#######################################################")
-                # print("used_list : %s timber" %(len(self.used_list)))
-                # print("%s : Number of joint = %s | Select surface domain = %s | Joint name = %s"
-                #       % (self.used_list[i].name, self.used_list[i].num_joint,
-                #          self.used_list[i].select_domain_list, self.used_list[i].joint_name_list))
-
-                # layer分けをする
-                Parent_layer = used_list
-                child1_layer = self.used_list[i].name
-
-                # child1 layer
-                timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
-
-                # child2 layer
-                surface = rs.AddLayer("surface", [220, 220, 220], True, False, timber_ID)
-                center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
-                drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
-
-                rs.ObjectLayer(self.used_list[i].surface, surface)
-                rs.ObjectLayer(self.used_list[i].center_line, center_line)
-                for j in range(0, len(self.used_list[i].drill_line_list)):
-                    rs.ObjectLayer(self.used_list[i].drill_line_list[j], drill_line)
-
-            else:
-                # # print("%s : Number of joint = %s | Select surface domain = %s | Joint name = %s"
-                #       % (self.used_list[i].name, self.used_list[i].num_joint,
-                #          self.used_list[i].select_domain_list, self.used_list[i].joint_name_list))
-
-                # layer分けをする
-                Parent_layer = used_list
-                child1_layer = self.used_list[i].name
-
-                # child1 layer
-                timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
-
-                # child2 layer
-                surface = rs.AddLayer("surface", [220, 220, 220], True, False, timber_ID)
-                center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
-                drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
-
-                rs.ObjectLayer(self.used_list[i].surface, surface)
-                rs.ObjectLayer(self.used_list[i].center_line, center_line)
-                for j in range(0, len(self.used_list[i].drill_line_list)):
-                    rs.ObjectLayer(self.used_list[i].drill_line_list[j], drill_line)
-
-        # do not use list
-        for i in range(0, len(self.not_use_list)):
-            if i == 0:
-                # print("-------------------------------------------------------")
-                # print("not_use_list : %s timber" %(len(self.not_use_list)))
-                # print("%s :Number of joint = %s | Select surface domain = %s | Joint name = %s"
-                #       % (self.not_use_list[i].name, self.not_use_list[i].num_joint,
-                #          self.not_use_list[i].select_domain_list, self.not_use_list[i].joint_name_list))
-
-                # layer分けをする
-                Parent_layer = not_use_list
-                child1_layer = self.not_use_list[i].name
-
-                # child1 layer
-                timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
-
-                # child2 layer
-                surface = rs.AddLayer("surface", [255, 0, 0], True, False, timber_ID)
-                center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
-                drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
-
-                rs.ObjectLayer(self.not_use_list[i].surface, surface)
-                rs.ObjectLayer(self.not_use_list[i].center_line, center_line)
-                for j in range(0, len(self.not_use_list[i].drill_line_list)):
-                    rs.ObjectLayer(self.not_use_list[i].drill_line_list[j], drill_line)
-
-            else:
-                # print("%s : Number of joint = %s | Select surface domain = %s | Joint name = %s"
-                #       % (self.not_use_list[i].name, self.not_use_list[i].num_joint,
-                #          self.not_use_list[i].select_domain_list, self.not_use_list[i].joint_name_list))
-
-                # layer分けをする
-                Parent_layer = not_use_list
-                child1_layer = self.not_use_list[i].name
-
-                # child1 layer
-                timber_ID = rs.AddLayer(child1_layer, [0, 0, 0], True, False, Parent_layer)
-
-                # child2 layer
-                surface = rs.AddLayer("surface", [255, 0, 0], True, False, timber_ID)
-                center_line = rs.AddLayer("center line", [0, 0, 0], True, False, timber_ID)
-                drill_line = rs.AddLayer("drill line", [0, 0, 0], True, False, timber_ID)
-
-                rs.ObjectLayer(self.not_use_list[i].surface, surface)
-                rs.ObjectLayer(self.not_use_list[i].center_line, center_line)
-                for j in range(0, len(self.not_use_list[i].drill_line_list)):
-                    rs.ObjectLayer(self.not_use_list[i].drill_line_list[j], drill_line)
-
-    def checkPartner(self, loop_num):
-
-        if loop_num == 0:
-            for i in range(len(self.used_list)):
-                timber = self.used_list[i]
-                srf1 = self.used_list[i].surface
-
-                count = 0
-                for j in range(len(self.used_list) - 1):
-                    if count == i:
-                        count = count + 1
-                    else:
-                        curve = rs.IntersectBreps(srf1, self.used_list[count].surface)
-                        if curve is None:
-                            count = count + 1
-                            continue
-                        else:
-                            timber.partner_tim.append(self.used_list[count])
-                            count = count + 1
-                            for k in range(len(curve)):
-                                rs.DeleteObject(curve[k])
-
-            return timber.partner_tim
-
-        else:
-            for i in range(len(self.used_list)):
-                timber = self.used_list[i]
-                srf = self.used_list[i].surface
-
-                count = 0
-                for j in range(len(self.used_list) - 1):
-                    if count == i:
-                        count = count + 1
-                    else:
-                        curve = rs.IntersectBreps(srf, self.used_list[count].surface)
-                        if curve is None:
-                            count = count + 1
-                            continue
-                        else:
-                            timber.partner_tim = []
-                            timber.partner_tim.append(self.used_list[count])
-                            count = count + 1
-                            for k in range(len(curve)):
-                                rs.DeleteObject(curve[k])
+    # def checkPartner(self, loop_num):
+    #
+    #     if loop_num == 0:
+    #         for i in range(len(self.used_list)):
+    #             timber = self.used_list[i]
+    #             srf1 = self.used_list[i].surface
+    #
+    #             count = 0
+    #             for j in range(len(self.used_list) - 1):
+    #                 if count == i:
+    #                     count = count + 1
+    #                 else:
+    #                     curve = rs.IntersectBreps(srf1, self.used_list[count].surface)
+    #                     if curve is None:
+    #                         count = count + 1
+    #                         continue
+    #                     else:
+    #                         timber.partner_tim.append(self.used_list[count])
+    #                         count = count + 1
+    #                         for k in range(len(curve)):
+    #                             rs.DeleteObject(curve[k])
+    #
+    #         return timber.partner_tim
+    #
+    #     else:
+    #         for i in range(len(self.used_list)):
+    #             timber = self.used_list[i]
+    #             srf = self.used_list[i].surface
+    #
+    #             count = 0
+    #             for j in range(len(self.used_list) - 1):
+    #                 if count == i:
+    #                     count = count + 1
+    #                 else:
+    #                     curve = rs.IntersectBreps(srf, self.used_list[count].surface)
+    #                     if curve is None:
+    #                         count = count + 1
+    #                         continue
+    #                     else:
+    #                         timber.partner_tim = []
+    #                         timber.partner_tim.append(self.used_list[count])
+    #                         count = count + 1
+    #                         for k in range(len(curve)):
+    #                             rs.DeleteObject(curve[k])

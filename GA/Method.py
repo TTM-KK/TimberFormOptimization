@@ -49,7 +49,7 @@ def confirm_pop_divide(num_timber, pop_instance1):
     # print('emerge_list', emerge_list)
 
     partner = pop_instance1.used_list[0].partner_tim
-    tim_name = pop_instance1.used_list[0].name
+    tim_name = pop_instance1.used_list[0].id
 
     if tim_name not in emerge_list:
         emerge_list.append(tim_name)
@@ -90,7 +90,7 @@ def confirm_pop_divide(num_timber, pop_instance1):
         re_loop = False
 
         for i in range(num_timber):
-            if pop_instance1.used_list[i].name == tim_name:
+            if pop_instance1.used_list[i].id == tim_name:
                 partner = pop_instance1.used_list[i].partner_tim
 
                 # 3つのリストを更新する
@@ -158,7 +158,7 @@ def confirm_pop_divide(num_timber, pop_instance1):
             return False
 
 
-def DecideInheritanceTimber(pop_instance1, pop_instance2, already_regenerate_list, generate_range):
+def decide_inheritance_timber(pop_instance1, pop_instance2, already_regenerate_list, generate_range):
     """
     pop_2の中で継承する材を決定し、材の個体番号をreturnする。
     :param pop_instance1:
@@ -172,8 +172,8 @@ def DecideInheritanceTimber(pop_instance1, pop_instance2, already_regenerate_lis
     connect_list = []
     move_pop2_num_list = []
 
-    pop_num_1 = pop_instance1.population_num  # ttm change pop_index -> population_num
-    pop_num_2 = pop_instance2.population_num
+    pop_num_1 = pop_instance1.population_id  # ttm change pop_index -> population_id
+    pop_num_2 = pop_instance2.population_id
     num_range = pop_num_1 - pop_num_2
 
     move_from_p = Rhino.Geometry.Point3d(0,0,0)
@@ -182,8 +182,8 @@ def DecideInheritanceTimber(pop_instance1, pop_instance2, already_regenerate_lis
     xf = Rhino.Geometry.Transform.Translation(vec_move)
 
     for i in range(len(pop_instance2.used_list)):
-        if pop_instance2.used_list[i].name not in already_regenerate_list:
-            move_pop2_num_list.append(pop_instance2.used_list[i].name)
+        if pop_instance2.used_list[i].id not in already_regenerate_list:
+            move_pop2_num_list.append(pop_instance2.used_list[i].id)
         else:
             continue
 
@@ -194,7 +194,7 @@ def DecideInheritanceTimber(pop_instance1, pop_instance2, already_regenerate_lis
     for i in range(len(move_pop2_num_list)):
         move_index = move_pop2_num_list[i]
         for j in range(len(pop_instance2.used_list)):
-            if move_index == pop_instance2.used_list[j].name:
+            if move_index == pop_instance2.used_list[j].id:
                 srf = copy.deepcopy(pop_instance2.used_list[j].surface)
                 axis = copy.deepcopy(pop_instance2.used_list[j].center_line)
                 srf.Transform(xf)
@@ -203,7 +203,7 @@ def DecideInheritanceTimber(pop_instance1, pop_instance2, already_regenerate_lis
                 list_srf.append(srf)
                 list_axis.append(axis)
                 list_section_length.append(pop_instance2.used_list[j].section_length)
-                list_timber_num.append(pop_instance2.used_list[j].name)
+                list_timber_num.append(pop_instance2.used_list[j].id)
 
     # 接触判定を行う。 TODO セグメントを増やすなどして精度を向上させる必要あり。
     for i in range(len(list_srf)):
@@ -216,7 +216,7 @@ def DecideInheritanceTimber(pop_instance1, pop_instance2, already_regenerate_lis
         connect_flag = False
         for j in range(len(already_regenerate_list)):
             for k in range(len(pop_instance1.used_list)):
-                if already_regenerate_list[j] == pop_instance1.used_list[k].name:
+                if already_regenerate_list[j] == pop_instance1.used_list[k].id:
                     tim_other = pop_instance1.used_list[k].center_line
                     tim_end = tim_other.PointAtEnd
                     tim_start = tim_other.PointAtStart
@@ -248,7 +248,103 @@ def DecideInheritanceTimber(pop_instance1, pop_instance2, already_regenerate_lis
     return inherit_timber_id_list, connect_list
 
 
-def MovePopulationUpdate(already_regenerate, pop_instance, generate_range, generation_num,
+def decide_inheritance_tim_connected(pop_instance1, pop_instance2, already_regenerate_list, generate_range):
+    """
+    pop_2の中で継承する材を決定し、材の個体番号をreturnする。
+    :param pop_instance1:
+    :param pop_instance2:
+    :param already_regenerate_list:
+    :param generate_range:
+    :return: 1; pop2の継承する材のID　2: 継承する材の内pop1に接合している材のIDと接合相手のID --> [接合している材のID, 接合している相手の材のID]
+    """
+
+    segment_num = 20
+
+    inherit_timber_id_list = []
+    connect_list = []
+
+    # pop2をpop1の位置に動かすことで接触判定を行えるようにしている。
+    move_pop2_num_list = []
+
+    pop_num_1 = pop_instance1.population_id  # ttm change pop_index -> population_id
+    pop_num_2 = pop_instance2.population_id
+    num_range = pop_num_1 - pop_num_2
+
+    move_from_p = Rhino.Geometry.Point3d(0, 0, 0)
+    move_to_p = Rhino.Geometry.Point3d(num_range*generate_range*2, 0, 0)
+    vec_move = move_to_p - move_from_p
+    xf = Rhino.Geometry.Transform.Translation(vec_move)
+
+    # すでに生成されている部材をのぞく部材IDを一旦リスト内に格納する。
+    for i in range(len(pop_instance2.used_list)):
+        if pop_instance2.used_list[i].id not in already_regenerate_list:
+            move_pop2_num_list.append(pop_instance2.used_list[i].id)
+        else:
+            continue
+
+    list_srf = []
+    # list_axis = []
+    list_section_length = []
+    list_tim_id = []
+    for i in range(len(move_pop2_num_list)):
+        move_index = move_pop2_num_list[i]
+        for j in range(len(pop_instance2.used_list)):
+            if move_index == pop_instance2.used_list[j].id:
+                srf = copy.deepcopy(pop_instance2.used_list[j].surface)
+                # axis = copy.deepcopy(pop_instance2.used_list[j].center_line)
+                srf.Transform(xf)
+                # axis.Transform(xf)
+
+                list_srf.append(srf)
+                # list_axis.append(axis)
+                # list_section_length.append(pop_instance2.used_list[j].section_length)
+                list_tim_id.append(pop_instance2.used_list[j].id)
+
+    # surfaceを用いた接触判定をおこなう。
+    for i in range(len(list_srf)):
+        srf = list_srf[i]
+        tim1_segment_points, tim1_diameter = calculate_srf_segment_points(srf, segment_num)
+
+        intersection_flag = False
+        for j in range(len(already_regenerate_list)):
+            for k in range(len(pop_instance1.used_list)):
+                if already_regenerate_list[j] == pop_instance1.used_list[k].id:
+                    srf_other = pop_instance1.used_list[k].surface
+                    tim2_segment_points, tim2_diameter = calculate_srf_segment_points(srf_other, segment_num)
+
+                    tim1_index, tim2_index = calculate_connect_part_indices(tim1_segment_points, tim2_segment_points,
+                                                                            segment_num)
+
+                    tim1_min_p = tim1_segment_points[tim1_index]
+                    tim2_min_p = tim2_segment_points[tim2_index]
+                    vec = tim1_min_p - tim2_min_p
+                    length = vec.Length
+
+                    judge_value = (tim1_diameter[tim1_index] / 2) + (tim2_diameter[tim2_index] / 2)
+
+                    if length <= judge_value:
+                        intersection_flag = True
+                        partner_tim_name = already_regenerate_list[j]
+                    else:
+                        pass
+
+                    break
+
+            if intersection_flag:
+                break
+            else:
+                continue
+
+        if intersection_flag:
+            inherit_timber_id_list.append(list_tim_id[i])
+            connect_list.append([list_tim_id[i], partner_tim_name])
+        else:
+            pass
+
+    return inherit_timber_id_list, connect_list
+
+
+def move_and_pop_update_for_already(already_regenerate, pop_instance, generate_range, generation_num,
                          between_draw_rhino, main_loop, loop, list_temp_partner_tim):
     """
     そのまま継承する材をコピーする。
@@ -266,10 +362,10 @@ def MovePopulationUpdate(already_regenerate, pop_instance, generate_range, gener
     for i in range(len(already_regenerate)):
         success_flag = False
         for j in range(len(pop_instance.used_list)):
-            if already_regenerate[i] == pop_instance.used_list[j].name:
+            if already_regenerate[i] == pop_instance.used_list[j].id:
                 tim_move = pop_instance.used_list[j]
 
-                pop_index = pop_instance.pop_index
+                pop_index = pop_instance.population_id
                 move_from = Rhino.Geometry.Point3d(pop_index * 2 * generate_range, 0, 0)
                 move_to = Rhino.Geometry.Point3d(loop * generate_range * 2, -2 * generate_range, 0)
                 # vec_move = rs.VectorCreate(move_to, move_from)
@@ -289,7 +385,7 @@ def MovePopulationUpdate(already_regenerate, pop_instance, generate_range, gener
     for i in range(len(already_regenerate)):
         tim_num = already_regenerate[i]
         for j in range(len(pop_instance.used_list)):
-            if pop_instance.used_list[j].name == tim_num:
+            if pop_instance.used_list[j].id == tim_num:
                 tim_index = j
                 break
 
@@ -299,17 +395,18 @@ def MovePopulationUpdate(already_regenerate, pop_instance, generate_range, gener
                     pop_instance.used_list[tim_index].partner_tim[j])
 
 
-def MovePopulationUpdate2(decide_inheritance_num_list, pop_instance1, pop_instance2, generate_range, generation_num,
+
+def move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_instance1, pop_instance2, generate_range, generation_num,
                          between_draw_rhino, main_loop, loop, list_temp_partner_tim):
 
     for i in range(len(decide_inheritance_num_list)):
         success_flag = False
         for j in range(len(pop_instance1.used_list)):
-            if decide_inheritance_num_list[i] == pop_instance1.used_list[j].name:
+            if decide_inheritance_num_list[i] == pop_instance1.used_list[j].id:
                 tim_move = pop_instance1.used_list[j]
 
-                pop_index1 = pop_instance1.pop_index
-                pop_index2 = pop_instance2.pop_index
+                pop_index1 = pop_instance1.population_id
+                pop_index2 = pop_instance2.population_id
 
                 move_from = Rhino.Geometry.Point3d(pop_index2 * 2 * generate_range, 0, 0)
                 move_to = Rhino.Geometry.Point3d(loop * generate_range * 2, -2 * generate_range, 0)
@@ -330,7 +427,7 @@ def MovePopulationUpdate2(decide_inheritance_num_list, pop_instance1, pop_instan
     for i in range(len(decide_inheritance_num_list)):
         tim_num = decide_inheritance_num_list[i]
         for j in range(len(pop_instance1.used_list)):
-            if pop_instance2.used_list[j].name == tim_num:
+            if pop_instance2.used_list[j].id == tim_num:
                 tim_index = j
                 break
 
@@ -356,7 +453,7 @@ def RenewalInstanceInformationSameGeneration(pop_instance, temp_save_list_srf, t
     :return:
     """
     for i in range(len(pop_instance.used_list)):
-        name_tim = pop_instance.used_list[i].name
+        name_tim = pop_instance.used_list[i].id
 
         temp_save_list_srf[loop][name_tim] = pop_instance.used_list[i].surface
         pop_instance.used_list[i].surface = None
@@ -382,9 +479,9 @@ def RenewalPop2(pop_instance1, pop_instance2, pop_2_inheritance_num):
     for i in range(len(pop_2_inheritance_num)):
         inheritance_num = pop_2_inheritance_num[i]
         for j in range(len(pop_instance1.used_list)):
-            if pop_instance1.used_list[j].name == inheritance_num:
+            if pop_instance1.used_list[j].id == inheritance_num:
                 for k in range(len(pop_instance2.used_list)):
-                    if pop_instance2.used_list[k].name == inheritance_num:
+                    if pop_instance2.used_list[k].id == inheritance_num:
                         pop_instance1.used_list[j].surface = copy.deepcopy(pop_instance2.used_list[k].surface)
                         pop_instance1.used_list[j].center_line = copy.deepcopy(pop_instance2.used_list[k].center_line)
                         pop_instance1.used_list[j].select_domain_list = copy.deepcopy(pop_instance2.used_list[k].select_domain_list)
@@ -426,7 +523,7 @@ def selectDomainRenewal(already_regenerate, num_timber, pop_instance):
     """
     for i in range(len(already_regenerate)):
         for j in range(num_timber):
-            if already_regenerate[i] == pop_instance.used_list[j].name:
+            if already_regenerate[i] == pop_instance.used_list[j].id:
                 count_domain_loop = -1
                 for _ in range(len(pop_instance.used_list[j].select_domain_list)):
                     count_domain_loop = count_domain_loop + 1
@@ -447,7 +544,7 @@ def selectDomainRenewal2(inheritance_num_list, num_timber, pop_instance1):
 
      for i in range(len(inheritance_num_list)):
             for j in range(num_timber):
-                if inheritance_num_list[i] == pop_instance1.used_list[j].name:
+                if inheritance_num_list[i] == pop_instance1.used_list[j].id:
                     count_domain_loop = -1
                     for _ in range(len(pop_instance1.used_list[j].select_domain_list)):
                         count_domain_loop = count_domain_loop + 1
@@ -488,3 +585,58 @@ def SingleTimberMoveObjects(timber_instance, vector_move, generation_num, loop_n
     if generation_num - 1 == loop_num:
         scriptcontext.doc.Objects.AddBrep(timber_instance.surface)
         scriptcontext.doc.Objects.AddCurve(timber_instance.center_line)
+
+
+def calculate_srf_segment_points(srf, segment_num):
+    srf_domain_u = srf.Faces[0].Domain(0)
+    srf_domain_v = srf.Faces[0].Domain(1)
+
+    srf_domain_u_segment = (srf_domain_u[1] - srf_domain_u[0]) / segment_num
+    srf_domain_v_segment = (srf_domain_v[1] - srf_domain_v[0]) / 10
+
+    segment_points_list = []
+    diameter_list = []
+    for i in range(segment_num + 1):
+        p1_u = srf_domain_u[0] + (srf_domain_u_segment * i)
+        p1_v = srf_domain_v[0] + (srf_domain_v_segment * 0)
+
+        p2_u = srf_domain_u[0] + (srf_domain_u_segment * i)
+        p2_v = srf_domain_v[0] + (srf_domain_v_segment * 5)
+
+        srf_point1 = srf.Faces[0].PointAt(p1_u, p1_v)
+        srf_point2 = srf.Faces[0].PointAt(p2_u, p2_v)
+
+        line = Rhino.Geometry.Line(srf_point2, srf_point1)
+        diameter = line.Length
+
+        center_p = line.PointAt(0.5)
+        segment_points_list.append(center_p)
+        diameter_list.append(diameter)
+
+    return segment_points_list, diameter_list
+
+
+def calculate_connect_part_indices(tim1_segment_points, tim2_segment_points, segment_num):
+    between_length_list = []
+    for i in range(len(tim1_segment_points)):
+        tim1_p = tim1_segment_points[i]
+        for j in range(len(tim2_segment_points)):
+            tim2_p = tim2_segment_points[j]
+
+            between_vec = tim2_p - tim1_p
+            length = between_vec.Length
+            between_length_list.append(length)
+
+    length_min = min(between_length_list)
+    index = between_length_list.index(length_min)
+
+    tim1_index = index // (segment_num + 1)
+    tim2_index = index % (segment_num + 1)
+
+    return tim1_index, tim2_index
+
+
+def transform_object_rhinocommon(object, vec_move):
+    xf = Rhino.Geometry.Transform.Translation(vec_move)
+    object.Transform(xf)
+

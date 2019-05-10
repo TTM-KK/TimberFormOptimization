@@ -61,7 +61,7 @@ def GetTimberSectionLength_RhinoCommon(tim_srf, base_point):
 
     length = (list_point[0] - list_point[5]).Length
 
-    return length , list_point[0]
+    return length, list_point[0]
 
 
 def VectorAngle_RhinoCommon(vector1, vector2):
@@ -80,10 +80,9 @@ def VectorAngle_RhinoCommon(vector1, vector2):
     radians = math.acos(dot)
     # return math.degrees(radians)
     return radians
-#-----------------------------------------------------------------------------------------------------------------------
+
 
 def addVector(end_point, start_point):
     vec = end_point - start_point
 
     return vec
-
