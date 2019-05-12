@@ -554,13 +554,13 @@ def selectDomainRenewal2(inheritance_num_list, num_timber, pop_instance1):
                             count_domain_loop = count_domain_loop - 1  # 次のループでも同じインデックスを使用するために
 
 
-def SingleTimberMoveObjects(timber_instance, vector_move, generation_num, loop_num, between_draw_num):
+def SingleTimberMoveObjects(timber_instance, vector_move, generation_count, pop_count, between_draw_num):
     """
     オブジェクトをRhionCommonを使用して移動させるメソッド
     :param timber_instance: timberのインスタンス
     :param vector_move: 移動するためのベクトル
-    :param generation_num: 現在の世代数
-    :param loop_num: 小ループの数
+    :param generation_count: 現在の世代数
+    :param pop_count: 小ループの数
     :param between_draw_num: 描画する間隔
     :return: なし。
     """
@@ -582,7 +582,7 @@ def SingleTimberMoveObjects(timber_instance, vector_move, generation_num, loop_n
     else:
         timber_instance.surface.Transform(xf)
 
-    if generation_num - 1 == loop_num:
+    if generation_count - 1 == pop_count:
         scriptcontext.doc.Objects.AddBrep(timber_instance.surface)
         scriptcontext.doc.Objects.AddCurve(timber_instance.center_line)
 

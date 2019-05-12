@@ -153,7 +153,7 @@ def random_chunk_crossover(num_timber, divide_range, pop1):
     :param pop1:
     :return:
     '''
-    
+
     # 次世代への継承部材数を決定する。
     inheritance_num = rnd.randint(divide_range - 1, num_timber - 1)
 

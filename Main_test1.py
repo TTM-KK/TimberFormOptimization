@@ -96,7 +96,8 @@ for i in range(pop_num):
 
 # スキャンデータを生成クラスに渡し、インスタンス化
 for i in range(pop_num):
-    dic['generate' + str(i)] = Generate(temp_center_line[i], temp_surface[i], id_list, num_timber, timber_num[i])
+    dic['generate' + str(i)] = Generate(temp_center_line[i], temp_surface[i], id_list, num_timber, timber_num[i],
+                                        generate_range)
 
 # Step3: 各Generateクラスのインスタンス毎にTimberクラスのインスタンスを作成
 for j in range(pop_num):
