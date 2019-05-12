@@ -639,4 +639,3 @@ def calculate_connect_part_indices(tim1_segment_points, tim2_segment_points, seg
 def transform_object_rhinocommon(object, vec_move):
     xf = Rhino.Geometry.Transform.Translation(vec_move)
     object.Transform(xf)
-
