@@ -539,6 +539,7 @@ def selectDomainRenewal2(inheritance_num_list, num_timber, pop_instance1):
     #             for k in range(len(pop_instance2.used_list[j].select_domain_list)):
     #                 if pop_instance2.used_list[j].name == pop_instance2.used_list[j].select_domain_list[k][1]:
     #                     print()
+
     for i in range(len(inheritance_num_list)):
         for j in range(num_timber):
             if inheritance_num_list[i] == pop_instance1.used_list[j].id:
@@ -549,6 +550,7 @@ def selectDomainRenewal2(inheritance_num_list, num_timber, pop_instance1):
                     if tim_name_domain not in inheritance_num_list:
                         pop_instance1.used_list[j].select_domain_list.pop(count_domain_loop)  # 削除する。
                         count_domain_loop = count_domain_loop - 1  # 次のループでも同じインデックスを使用するために
+
 
 
 def SingleTimberMoveObjects(timber_instance, vector_move, generation_count, pop_count, between_draw_num):
@@ -636,3 +638,4 @@ def calculate_connect_part_indices(tim1_segment_points, tim2_segment_points, seg
 def transform_object_rhinocommon(object, vec_move):
     xf = Rhino.Geometry.Transform.Translation(vec_move)
     object.Transform(xf)
+

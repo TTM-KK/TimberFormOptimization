@@ -23,7 +23,6 @@ import ReGenerate
 from gc import collect
 
 
-
 num_timber = 10  # timberの総本数
 num_base_timber = 3
 cantilever_num = 4  # 初期生成時の全体の中でのcantileverの数
@@ -33,6 +32,7 @@ divide_range = 3  # 次世代に継承する材の最低本数を指定
 pop_num = 3  # 初期個体数。世代ごとの個体数　ttm add 181003
 elite_num = 1  # エリート選択における選択数。
 generation_num = 2  # 世代数
+
 tournament_size = 2  # トーナメントサイズ
 tournament_num = 1  # トーナメント選択の回数
 mutation_ratio = 20  # 突然変異の確率
@@ -314,11 +314,15 @@ for main_loop in range(generation_num):
                 if list_temp_partner_tim[loop][i][j] == i:
                     raise Exception('miss renewal partner_tim')
 
+        for i in range(num_timber):
+            for j in range(len(list_temp_partner_tim[loop][i])):
+                if list_temp_partner_tim[loop][i][j] == i:
+                    raise Exception('miss renewal partner_tim')
+
         # そのまま継承する材をMoveObjectでコピー、partnerを更新する
         GA.Method.move_and_pop_update_for_already(pop_regenerate.already_regenerate_tim_id, pop_1, generate_range, generation_num, between_draw_rhino,
                                        main_loop, loop, list_temp_partner_tim)
 
-        # partnerの更新ミスがないかチェック
         for i in range(num_timber):
             for j in range(len(list_temp_partner_tim[loop][i])):
                 if list_temp_partner_tim[loop][i][j] == i:
@@ -407,8 +411,6 @@ for main_loop in range(generation_num):
         # flag_divide = GA.Method.confirm_pop_divide(num_timber, pop_1)
         # t2_flag_divide = time.time()
 
-        # print("flag_divide : %s  Time: %s" % (flag_divide, t2_flag_divide-t1_flag_divede))
-
         # Generateクラスインスタンス変数の更新
         # 戻す。　　次世代の個体生成前に保持していたGenerateクラスの変数に戻す。
         GA.Method.RenewalInstanceInformationSameGeneration(pop_1, temp_list_srf_for_next_generation,
@@ -487,7 +489,6 @@ for main_loop in range(generation_num):
 
     del temp_list_center_for_next_generation, temp_list_srf_for_next_generation
     collect()
-
 
 # Step10:  EVALUATION
 evaluation_value = []

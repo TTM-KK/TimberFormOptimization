@@ -24,7 +24,6 @@ class Generate:
         self.evaluation = 0
         self.yet_regenerate_tim_id = []  # 再生成されずにいる部材のidを格納
         self.already_regenerate_tim_id = []  # 再生成すでにされている部材のidを格納する。
-
         self.generate_range = generate_range
 
     def instantiate_timber(self):
@@ -510,7 +509,6 @@ class Generate:
         else:
             return False
 
-        # 変数の更新
         # domainの更新
         used_timber.select_domain_list.append([select_domain1, unused_timber.id])
         unused_timber.select_domain_list.append([select_domain2, used_timber.id])
@@ -591,6 +589,7 @@ class Generate:
 
                 select_domain_3_start = 0  # TODO 今のところ固定値
                 for select_domain_loop in range(200):
+
                     select_domain_1 = used_timber1.select_surface_domain()  # select_domain はドメインの値をintで返される。
                     select_domain_2 = used_timber2.select_surface_domain()
 
@@ -987,6 +986,7 @@ class Generate:
                 # print('GL distance is not satisfied')
                 return False
 
+
             # contact_judge_flag = False
             contact_judge_flag = self.contact_judgement_bridge_specify(unused_timber.id, used_timber1.id, used_timber2.id, already_regenerated_list)
             if contact_judge_flag:
@@ -1023,6 +1023,7 @@ class Generate:
 
         return True
 
+      
     def contact_judgement_cantilever(self, judge_tim_id, ignore_tim_id):
 
         # 接触判定に使用する部材のsrf情報をリスト内に格納する。
@@ -1324,3 +1325,4 @@ def calculate_connect_part_indices(tim1_segment_points, tim2_segment_points, seg
     tim2_index = index % (segment_num + 1)
 
     return tim1_index, tim2_index
+
