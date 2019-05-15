@@ -8,7 +8,7 @@ import Rhino.Geometry
 import scriptcontext
 
 
-def CopyTimberObjects(timber_instance, list_srf_temp, list_center_line_temp):
+def copy_timber_objects(timber_instance, list_srf_temp, list_center_line_temp):
     """
     サーフェスと軸線をリストに保存するためにdeepcopyする
     :param timber_instance: Timberインスタンス
@@ -19,7 +19,9 @@ def CopyTimberObjects(timber_instance, list_srf_temp, list_center_line_temp):
     # center_line = rs.CopyObject(timber_instance.center_line)
     # srf = rs.CopyObject(timber_instance.surface)
     center_line = copy.deepcopy(timber_instance.center_line)
+    # center_line = timber_instance.center_line
     srf = copy.deepcopy(timber_instance.surface)
+    # srf = timber_instance.surface
     # mark_line1 = rs.CopyObject(timber_instance.two_mark_line[0])
     # mark_line2 = rs.CopyObject(timber_instance.two_mark_line[1])
     # rs.CopyObject(timber_1.drill_line_list, vector_move)
@@ -395,7 +397,6 @@ def move_and_pop_update_for_already(already_regenerate, pop_instance, generate_r
                     pop_instance.used_list[tim_index].partner_tim[j])
 
 
-
 def move_and_pop_update_for_inheritance(decide_inheritance_num_list, pop_instance1, pop_instance2, generate_range, generation_num,
                          between_draw_rhino, main_loop, loop, list_temp_partner_tim):
 
@@ -458,21 +459,18 @@ def RenewalInstanceInformationSameGeneration(pop_instance, temp_save_list_srf, t
         temp_save_list_srf[loop][name_tim] = pop_instance.used_list[i].surface
         pop_instance.used_list[i].surface = None
         pop_instance.used_list[i].surface = list_srf_temp[i]
+        list_srf_temp[i] = None
 
         temp_save_list_line[loop][name_tim] = pop_instance.used_list[i].center_line
         pop_instance.used_list[i].center_line = None
         pop_instance.used_list[i].center_line = list_center_line_temp[i]
+        list_center_line_temp[i] = None
 
         temp_save_list_domain[loop][name_tim].extend(
             pop_instance.used_list[i].select_domain_list)  # ttm add list_select
         pop_instance.used_list[i].select_domain_list = []
         pop_instance.used_list[i].select_domain_list.extend(list_select_domain_temp[i])
 
-
-def RenewalInstanceInformation():
-    # dicが入ったものを引数として扱うことはできるのだろうか。
-
-    return None
 
 
 def RenewalPop2(pop_instance1, pop_instance2, pop_2_inheritance_num):
@@ -504,7 +502,7 @@ def saveInstanceInformation(num_timber, pop_instance, list_srf_temp, list_center
     """
     for i in range(num_timber):
         timber_instance = pop_instance.used_list[i]
-        CopyTimberObjects(timber_instance, list_srf_temp, list_center_line_temp)
+        copy_timber_objects(timber_instance, list_srf_temp, list_center_line_temp)
 
     # select_domain_listの保存。　　使用されているドメインの一覧のこと
     for i in range(num_timber):
@@ -542,25 +540,26 @@ def selectDomainRenewal2(inheritance_num_list, num_timber, pop_instance1):
     #                 if pop_instance2.used_list[j].name == pop_instance2.used_list[j].select_domain_list[k][1]:
     #                     print()
 
-     for i in range(len(inheritance_num_list)):
-            for j in range(num_timber):
-                if inheritance_num_list[i] == pop_instance1.used_list[j].id:
-                    count_domain_loop = -1
-                    for _ in range(len(pop_instance1.used_list[j].select_domain_list)):
-                        count_domain_loop = count_domain_loop + 1
-                        tim_name_domain = pop_instance1.used_list[j].select_domain_list[count_domain_loop][1]
-                        if tim_name_domain not in inheritance_num_list:
-                            pop_instance1.used_list[j].select_domain_list.pop(count_domain_loop)  # 削除する。
-                            count_domain_loop = count_domain_loop - 1  # 次のループでも同じインデックスを使用するために
+    for i in range(len(inheritance_num_list)):
+        for j in range(num_timber):
+            if inheritance_num_list[i] == pop_instance1.used_list[j].id:
+                count_domain_loop = -1
+                for _ in range(len(pop_instance1.used_list[j].select_domain_list)):
+                    count_domain_loop = count_domain_loop + 1
+                    tim_name_domain = pop_instance1.used_list[j].select_domain_list[count_domain_loop][1]
+                    if tim_name_domain not in inheritance_num_list:
+                        pop_instance1.used_list[j].select_domain_list.pop(count_domain_loop)  # 削除する。
+                        count_domain_loop = count_domain_loop - 1  # 次のループでも同じインデックスを使用するために
 
 
-def SingleTimberMoveObjects(timber_instance, vector_move, generation_num, loop_num, between_draw_num):
+
+def SingleTimberMoveObjects(timber_instance, vector_move, generation_count, pop_count, between_draw_num):
     """
     オブジェクトをRhionCommonを使用して移動させるメソッド
     :param timber_instance: timberのインスタンス
     :param vector_move: 移動するためのベクトル
-    :param generation_num: 現在の世代数
-    :param loop_num: 小ループの数
+    :param generation_count: 現在の世代数
+    :param pop_count: 小ループの数
     :param between_draw_num: 描画する間隔
     :return: なし。
     """
@@ -582,7 +581,7 @@ def SingleTimberMoveObjects(timber_instance, vector_move, generation_num, loop_n
     else:
         timber_instance.surface.Transform(xf)
 
-    if generation_num - 1 == loop_num:
+    if generation_count - 1 == pop_count:
         scriptcontext.doc.Objects.AddBrep(timber_instance.surface)
         scriptcontext.doc.Objects.AddCurve(timber_instance.center_line)
 

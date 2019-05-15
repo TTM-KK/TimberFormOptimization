@@ -89,8 +89,8 @@ def eliteSelection(elite_num, sort_generate_instance_list, select_elite_list):
     :return:
     """
     for i in range(elite_num):
-        select = sort_generate_instance_list[i]
-        select_elite_list.append(select)
+        select_id = sort_generate_instance_list[i].population_id
+        select_elite_list.append(select_id)
     # if flag:
     # for i in range(elite_num):
     #     del sort_generate_instance_list[0]
@@ -105,8 +105,9 @@ def tournamentSelection_max(tournament_size, tournament_num, sort_generate_insta
 
         max_value = max(list_eva)
         max_value_index = list_eva.index(max_value)
+        id = choices[max_value_index].population_id
 
-        select_tournament_list.append(choices[max_value_index])
+        select_tournament_list.append(id)
 
 
 def tournamentSelection_min(tournament_size, tournament_num, sort_generate_instance_list, select_tournament_list):
@@ -119,5 +120,6 @@ def tournamentSelection_min(tournament_size, tournament_num, sort_generate_insta
 
         min_value = min(list_eva)
         min_value_index = list_eva.index(min_value)
+        id = choices[min_value_index].population_id
 
-        select_tournament_list.append(choices[min_value_index])
+        select_tournament_list.append(id)
