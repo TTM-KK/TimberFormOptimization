@@ -6,6 +6,7 @@ import math  # ttm add 181003
 from forGenerate import timberMethod as timber
 import Rhino
 from forGenerate import RhinoCommonOriginalMethods as oriRhino
+import copy
 
 
 class Generate:
@@ -221,6 +222,7 @@ class Generate:
             each_domain_length1 = (domain_crv1[1] - domain_crv1[0]) / divide_domain_num
             each_domain_length2 = (domain_crv2[1] - domain_crv2[0]) / divide_domain_num
 
+            # select_domainの値を変化させることで接合部を変化させる事ができる。
             select_domain1 = used_timber.select_surface_domain()
             select_domain2 = unused_timber.select_surface_domain()
 
@@ -253,7 +255,7 @@ class Generate:
 
                 avoid_infinite_loop += 1
                 if avoid_infinite_loop > 50:
-                    print('infinite loop is occur')
+                    # print('infinite loop is occur')
                     break
 
                 # Rotate1回目
@@ -272,7 +274,7 @@ class Generate:
                 tim2_crv_start = tim2_center_crv.PointAtStart
 
                 # GL との接触を判定
-                if tim2_crv_end[2] > 100 and tim2_crv_start[2] > 100:
+                if 4000 > tim2_crv_end[2] > 100 and 4000 > tim2_crv_start[2] > 100:
                     gl_check = True
                 else:
                     gl_check = False
@@ -293,7 +295,17 @@ class Generate:
 
                 # 両条件を満たしていればOK
                 if range_check and gl_check:
+                    pass
+                else:
+                    continue
+
+                contact_judge_flag = False
+                # contact_judge_flag = self.contact_judgement_cantilever(unused_timber.id, used_timber.id)
+                if contact_judge_flag:
+                    flag_gl = True
+                else:
                     flag_gl = False
+                    # print('cantilever contact judgement clear : while{} loop{}'.format(avoid_infinite_loop, h))
 
             if flag_gl:
                 continue
@@ -428,8 +440,8 @@ class Generate:
             end_p = tim2_center_crv.PointAtEnd
             start_p = tim2_center_crv.PointAtStart
 
-            # GL との接触を判定
-            if end_p[2] > 100 and start_p[2] > 100:
+            # GL との接触を判定 + 高さ制限
+            if 4000 > end_p[2] > 100 and 4000> start_p[2] > 100:
                 gl_check = True
             else:
                 gl_check = False
@@ -441,12 +453,10 @@ class Generate:
                     and (self.generate_range * 2) * loop < end_p[0] < (self.generate_range * 2) * (
                     loop) + self.generate_range:
                 counter += 1
-                print('A')
 
             if -(self.generate_range * 2) * (loop_num + 1) + self.generate_range > start_p[1] > -(self.generate_range * 2) * (loop_num + 1) - (self.generate_range * 2) \
                     and -(self.generate_range * 2) * (loop_num + 1) + self.generate_range > end_p[1] > -(self.generate_range * 2) * (loop_num + 1) - (self.generate_range * 2):
                 counter += 1
-                print('B')
 
             if counter == 2:
                 range_check = True
@@ -455,9 +465,21 @@ class Generate:
 
             # 両条件を満たしていればOK
             if range_check and gl_check:
+                pass
+            else:
+                continue
+            # contact_judge_flag = False
+            contact_judge_flag = self.contact_judgement_cantilever_specify(unused_timber.id, used_timber.id, already_regenerated_list)
+            if contact_judge_flag:
+                flag = True
+            else:
+                # print('cantilever_specify contact judgement clear : while{}'.format(avoid_infinite_loop))
                 flag = False
+
         if flag:
             return False
+        else:
+            pass
 
         # 接合部最適化開始。
         length1, rc1 = oriRhino.GetTimberSectionLength_RhinoCommon(tim1_srf, tim1_point)
@@ -704,7 +726,7 @@ class Generate:
 
             # ----------------------------------------------------------------------------------------------------------
             # GLに接ししているか判定。
-            if tim3_end_p[2] > 100 and tim3_start_p[2] > 100:
+            if 4000 > tim3_end_p[2] > 100 and 4000 > tim3_start_p[2] > 100:
                 gl_check = True
             else:
                 gl_check = False
@@ -728,9 +750,17 @@ class Generate:
 
             # 両条件を満たしていればOK
             if range_check and gl_check:
-                break
+                pass
             else:
                 continue
+
+            contact_judge_flag = False
+            # contact_judge_flag = self.contact_judgement_bridge(unused_timber.id, used_timber1.id, used_timber2.id)
+            if contact_judge_flag:
+                continue
+            else:
+                # print('bridge contact judgement is success: {}'.format(h))
+                break
 
         # # layerを変更して正しいレイヤーへ
         # a = 'tim'
@@ -934,20 +964,15 @@ class Generate:
 
             # 生成可能範囲に収まっているか判定。
             counter = 0
-            print(end_p)
-            print(start_p)
-
             if (self.generate_range * 2) * loop < start_p[0] < (self.generate_range * 2) * (
                     loop) + self.generate_range \
                     and (self.generate_range * 2) * loop < end_p[0] < (self.generate_range * 2) * (
                     loop) + self.generate_range:
                 counter += 1
-                print('C')
 
             if -(self.generate_range * 2) * (loop_num + 1) + self.generate_range > start_p[1] > -(self.generate_range * 2) * (loop_num + 1) - (self.generate_range * 2) \
                     and -(self.generate_range * 2) * (loop_num + 1) + self.generate_range > end_p[1] > -(self.generate_range * 2) * (loop_num + 1) - (self.generate_range * 2):
                 counter += 1
-                print('D')
 
             if counter == 2:
                 range_check = True
@@ -956,11 +981,19 @@ class Generate:
 
             # 両条件を満たしていればOK
             if range_check and gl_check:
-                print('Bridge_specify Success in {}'.format(i))
-                break
+                # print('Bridge_specify Success in {}'.format(i))
+                pass
             else:
-                print('GL distance is not satisfied')
+                # print('GL distance is not satisfied')
                 return False
+
+            # contact_judge_flag = False
+            contact_judge_flag = self.contact_judgement_bridge_specify(unused_timber.id, used_timber1.id, used_timber2.id, already_regenerated_list)
+            if contact_judge_flag:
+                return False
+            else:
+                # print('bridge contact judgement is success : {}'.format(i))
+                break
 
         # 使用domainの更新のための値
         select_domain_3_end = abs(int(t_ // domain_range3))
@@ -989,3 +1022,305 @@ class Generate:
                 timber.distanceBetweenTimber_RhinoCommon(already_exist_timber, unused_timber)
 
         return True
+
+    def contact_judgement_cantilever(self, judge_tim_id, ignore_tim_id):
+
+        # 接触判定に使用する部材のsrf情報をリスト内に格納する。
+        # deepcopyを使用するかどうかは挙動を見てから決定する。
+        list_judge_srf = []
+        for i in range(len(self.used_list)):
+            if self.used_list[i].id != ignore_tim_id:
+                # judge_srf = copy.deepcopy(self.used_list[i].surface)
+                judge_srf = self.used_list[i].surface
+                list_judge_srf.append(judge_srf)
+            else:
+                continue
+
+        # print('list_judge_srf', list_judge_srf)
+
+        # 接触判定に使用する部材のsurfaceを取得しておく。
+        if len(self.timber_list) != 0:
+            for i in range(len(self.timber_list)):
+                if judge_tim_id == self.timber_list[i].id:
+                    srf_judge_tim = self.timber_list[i].surface
+                    break
+        else:
+            for i in range(len(self.used_list)):
+                if judge_tim_id == self.used_list[i].id:
+                    srf_judge_tim = self.used_list[i].surface
+                    break
+
+        segment_num = 20
+
+        # surfaceを用いた接触判定をおこなう。
+        # intersection_flag = False
+        for i in range(len(list_judge_srf)):
+            srf = list_judge_srf[i]
+            tim1_segment_points, tim1_diameter = calculate_srf_segment_points(srf, segment_num)
+
+            tim2_segment_points, tim2_diameter = calculate_srf_segment_points(srf_judge_tim, segment_num)
+
+            tim1_index, tim2_index = calculate_connect_part_indices(tim1_segment_points, tim2_segment_points,
+                                                                    segment_num)
+
+            tim1_min_p = tim1_segment_points[tim1_index]
+            tim2_min_p = tim2_segment_points[tim2_index]
+            vec = tim1_min_p - tim2_min_p
+            length = vec.Length
+
+            judge_value = (tim1_diameter[tim1_index] / 2) + (tim2_diameter[tim2_index] / 2)
+
+            # 接触していたらTrueしていなかったらFalse
+            if length <= judge_value:
+                intersection_flag = True
+            else:
+                intersection_flag = False
+
+            if intersection_flag:
+                break
+
+        if intersection_flag:
+            return True
+        else:
+            return False
+
+    def contact_judgement_cantilever_specify(self, judge_tim_id, ignore_tim_id, already_regenerate):
+
+        # 接触判定に使用する部材のsrf情報をリスト内に格納する。
+        # deepcopyを使用するかどうかは挙動を見てから決定する。
+        list_judge_srf = []
+        for i in range(len(already_regenerate)):
+            if already_regenerate[i] != ignore_tim_id:
+                tim_id = already_regenerate[i]
+                for j in range(len(self.used_list)):
+                    if tim_id == self.used_list[j].id:
+                        # judge_srf = copy.deepcopy(self.used_list[j].surface)
+                        judge_srf = self.used_list[j].surface
+                        list_judge_srf.append(judge_srf)
+                        break
+                    else:
+                        continue
+
+        # print('list_judge_srf', list_judge_srf)
+
+        # 接触判定に使用する部材のsurfaceを取得しておく。
+        if len(self.timber_list) != 0:
+            for i in range(len(self.timber_list)):
+                if judge_tim_id == self.timber_list[i].id:
+                    srf_judge_tim = self.timber_list[i].surface
+                    break
+        else:
+            for i in range(len(self.used_list)):
+                if judge_tim_id == self.used_list[i].id:
+                    srf_judge_tim = self.used_list[i].surface
+                    break
+
+        segment_num = 20
+
+        # surfaceを用いた接触判定をおこなう。
+        # intersection_flag = False
+        for i in range(len(list_judge_srf)):
+            srf = list_judge_srf[i]
+            tim1_segment_points, tim1_diameter = calculate_srf_segment_points(srf, segment_num)
+
+            tim2_segment_points, tim2_diameter = calculate_srf_segment_points(srf_judge_tim, segment_num)
+
+            tim1_index, tim2_index = calculate_connect_part_indices(tim1_segment_points, tim2_segment_points,
+                                                                    segment_num)
+
+            tim1_min_p = tim1_segment_points[tim1_index]
+            tim2_min_p = tim2_segment_points[tim2_index]
+            vec = tim1_min_p - tim2_min_p
+            length = vec.Length
+
+            judge_value = (tim1_diameter[tim1_index] / 2) + (tim2_diameter[tim2_index] / 2)
+
+            # 接触していたらTrueしていなかったらFalse
+            if length <= judge_value:
+                intersection_flag = True
+            else:
+                intersection_flag = False
+
+            if intersection_flag:
+                break
+
+        if intersection_flag:
+            return True
+        else:
+            return False
+
+    def contact_judgement_bridge(self, judge_tim_id, ignore_tim_id1, ignore_tim_id2):
+
+        # 接触判定に使用する部材のsrf情報をリスト内に格納する。
+        # deepcopyを使用するかどうかは挙動を見てから決定する。
+        list_judge_srf = []
+        for i in range(len(self.used_list)):
+            if self.used_list[i].id != ignore_tim_id1 or self.used_list[i].id != ignore_tim_id2:
+                # judge_srf = copy.deepcopy(self.used_list[i].surface)
+                judge_srf = self.used_list[i].surface
+                list_judge_srf.append(judge_srf)
+            else:
+                continue
+
+        # print('list_judge_srf', list_judge_srf)
+
+        # 接触判定に使用する部材のsurfaceを取得しておく。
+        if len(self.timber_list) != 0:
+            for i in range(len(self.timber_list)):
+                if judge_tim_id == self.timber_list[i].id:
+                    srf_judge_tim = self.timber_list[i].surface
+                    break
+        else:
+            for i in range(len(self.used_list)):
+                if judge_tim_id == self.used_list[i].id:
+                    srf_judge_tim = self.used_list[i].surface
+                    break
+
+        segment_num = 20
+
+        # surfaceを用いた接触判定をおこなう。
+        # intersection_flag = False
+        for i in range(len(list_judge_srf)):
+            srf = list_judge_srf[i]
+            tim1_segment_points, tim1_diameter = calculate_srf_segment_points(srf, segment_num)
+
+            tim2_segment_points, tim2_diameter = calculate_srf_segment_points(srf_judge_tim, segment_num)
+
+            tim1_index, tim2_index = calculate_connect_part_indices(tim1_segment_points, tim2_segment_points,
+                                                                    segment_num)
+
+            tim1_min_p = tim1_segment_points[tim1_index]
+            tim2_min_p = tim2_segment_points[tim2_index]
+            vec = tim1_min_p - tim2_min_p
+            length = vec.Length
+
+            judge_value = (tim1_diameter[tim1_index] / 2) + (tim2_diameter[tim2_index] / 2)
+
+            # 接触していたらTrueしていなかったらFalse
+            if length <= judge_value:
+                intersection_flag = True
+            else:
+                intersection_flag = False
+
+            if intersection_flag:
+                break
+
+        if intersection_flag:
+            return True
+        else:
+            return False
+
+    def contact_judgement_bridge_specify(self, judge_tim_id, ignore_tim_id1, ignore_tim_id2, already_regenerate):
+
+        # 接触判定に使用する部材のsrf情報をリスト内に格納する。
+        # deepcopyを使用するかどうかは挙動を見てから決定する。
+        list_judge_srf = []
+        for i in range(len(already_regenerate)):
+            if not already_regenerate[i] == ignore_tim_id1 and not already_regenerate[i] == ignore_tim_id2:
+                tim_id = already_regenerate[i]
+                # print('tim_id', tim_id)
+                for j in range(len(self.used_list)):
+                    if tim_id == self.used_list[j].id:
+                        # judge_srf = copy.deepcopy(self.used_list[j].surface)
+                        judge_srf = self.used_list[j].surface
+                        list_judge_srf.append(judge_srf)
+                        break
+                    else:
+                        continue
+
+        # print('list_judge_srf', list_judge_srf)
+
+        # 接触判定に使用する部材のsurfaceを取得しておく。
+        if len(self.timber_list) != 0:
+            for i in range(len(self.timber_list)):
+                if judge_tim_id == self.timber_list[i].id:
+                    srf_judge_tim = self.timber_list[i].surface
+                    break
+        else:
+            for i in range(len(self.used_list)):
+                if judge_tim_id == self.used_list[i].id:
+                    srf_judge_tim = self.used_list[i].surface
+                    break
+
+        segment_num = 20
+
+        # surfaceを用いた接触判定をおこなう。
+        # intersection_flag = False
+        for i in range(len(list_judge_srf)):
+            srf = list_judge_srf[i]
+            tim1_segment_points, tim1_diameter = calculate_srf_segment_points(srf, segment_num)
+
+            tim2_segment_points, tim2_diameter = calculate_srf_segment_points(srf_judge_tim, segment_num)
+
+            tim1_index, tim2_index = calculate_connect_part_indices(tim1_segment_points, tim2_segment_points,
+                                                                    segment_num)
+
+            tim1_min_p = tim1_segment_points[tim1_index]
+            tim2_min_p = tim2_segment_points[tim2_index]
+            vec = tim1_min_p - tim2_min_p
+            length = vec.Length
+
+            judge_value = (tim1_diameter[tim1_index] / 2) + (tim2_diameter[tim2_index] / 2)
+
+            # 接触していたらTrueしていなかったらFalse
+            if length <= judge_value:
+                intersection_flag = True
+            else:
+                intersection_flag = False
+
+            if intersection_flag:
+                break
+
+        if intersection_flag:
+            return True
+        else:
+            return False
+
+
+def calculate_srf_segment_points(srf, segment_num):
+    srf_domain_u = srf.Faces[0].Domain(0)
+    srf_domain_v = srf.Faces[0].Domain(1)
+
+    srf_domain_u_segment = (srf_domain_u[1] - srf_domain_u[0]) / segment_num
+    srf_domain_v_segment = (srf_domain_v[1] - srf_domain_v[0]) / 10
+
+    segment_points_list = []
+    diameter_list = []
+    for i in range(segment_num + 1):
+        p1_u = srf_domain_u[0] + (srf_domain_u_segment * i)
+        p1_v = srf_domain_v[0] + (srf_domain_v_segment * 0)
+
+        p2_u = srf_domain_u[0] + (srf_domain_u_segment * i)
+        p2_v = srf_domain_v[0] + (srf_domain_v_segment * 5)
+
+        srf_point1 = srf.Faces[0].PointAt(p1_u, p1_v)
+        srf_point2 = srf.Faces[0].PointAt(p2_u, p2_v)
+
+        line = Rhino.Geometry.Line(srf_point2, srf_point1)
+        diameter = line.Length
+
+        center_p = line.PointAt(0.5)
+        segment_points_list.append(center_p)
+        diameter_list.append(diameter)
+
+    return segment_points_list, diameter_list
+
+
+def calculate_connect_part_indices(tim1_segment_points, tim2_segment_points, segment_num):
+    between_length_list = []
+    for i in range(len(tim1_segment_points)):
+        tim1_p = tim1_segment_points[i]
+        for j in range(len(tim2_segment_points)):
+            tim2_p = tim2_segment_points[j]
+
+            between_vec = tim2_p - tim1_p
+            length = between_vec.Length
+            between_length_list.append(length)
+
+    length_min = min(between_length_list)
+    index = between_length_list.index(length_min)
+
+    tim1_index = index // (segment_num + 1)
+    tim2_index = index % (segment_num + 1)
+
+    return tim1_index, tim2_index
