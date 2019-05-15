@@ -20,21 +20,23 @@ import GA.Evaluation
 import GA.Crossover
 import GA.Method
 import ReGenerate
+from gc import collect
 
 
 num_timber = 10  # timberの総本数
 num_base_timber = 3
-cantilever_num = 3  # 初期生成時の全体の中でのcantileverの数
-bridge_num = 4
+cantilever_num = 4  # 初期生成時の全体の中でのcantileverの数
+bridge_num = 3
 
 divide_range = 3  # 次世代に継承する材の最低本数を指定
-pop_num = 5  # 初期個体数。世代ごとの個体数　ttm add 181003
+pop_num = 3  # 初期個体数。世代ごとの個体数　ttm add 181003
 elite_num = 1  # エリート選択における選択数。
-generation_num = 3  # 世代数
+generation_num = 2  # 世代数
+
 tournament_size = 2  # トーナメントサイズ
 tournament_num = 1  # トーナメント選択の回数
-mutation_ratio = 3  # 突然変異の確率
-initial_population_draw = True
+mutation_ratio = 20  # 突然変異の確率
+initial_population_draw = False
 flag_high = True  # ソート昇順の場合True　降順の場合False
 
 connect_count = 10  # 接合制約数
@@ -96,7 +98,13 @@ for i in range(pop_num):
 
 # スキャンデータを生成クラスに渡し、インスタンス化
 for i in range(pop_num):
-    dic['generate' + str(i)] = Generate(temp_center_line[i], temp_surface[i], id_list, num_timber, timber_num[i])
+    dic['generate' + str(i)] = Generate(temp_center_line[i], temp_surface[i], id_list, num_timber, timber_num[i],
+                                        generate_range)
+
+# 使用し終わったObjectのリスト削除。
+del get_center_line, get_surface, get_obj, id_list, timber_num
+del temp_center_line, temp_surface, center_line, all_surface
+collect()
 
 # Step3: 各Generateクラスのインスタンス毎にTimberクラスのインスタンスを作成
 for j in range(pop_num):
@@ -110,6 +118,7 @@ if closed_curve:
     for i in range(len(closed_curve)):
         curve = rs.coercecurve(closed_curve[i])
         objects_curve.append(curve)
+        del closed_curve[i]
 else:
     raise Exception('select closed curve is Error')
 
@@ -198,7 +207,7 @@ for main_loop in range(generation_num):
     print("Evaluation Time: %s" % (t4 - t3))
 
     # Step7:  # SELECTION  選択
-    selected_list = []
+    selected_id_list = []
     sort_generate_instance_list = []  # Genarateクラスインスタンスのリストを作成する。
     for i in range(pop_num):
         sort_generate_instance_list.append(dic['generate' + str(i)])
@@ -210,13 +219,28 @@ for main_loop in range(generation_num):
         GA.Selection.sort_low(sort_generate_instance_list)
 
     # elite selection
-    GA.Selection.eliteSelection(elite_num, sort_generate_instance_list, selected_list)
+    GA.Selection.eliteSelection(elite_num, sort_generate_instance_list, selected_id_list)
+
+    # print('elite', selected_id_list)
 
     # tournament selection
-    GA.Selection.tournamentSelection_min(tournament_size, tournament_num, sort_generate_instance_list, selected_list)
+    GA.Selection.tournamentSelection_min(tournament_size, tournament_num, sort_generate_instance_list, selected_id_list)
+
+    # print('tornament', selected_id_list)
+    # 一旦削除
+    del sort_generate_instance_list
+
+    # メモリ負担減のため、surfaceとcenter_lineを開放。
+    for i in range(pop_num):
+        if i not in selected_id_list:
+            for j in range(num_timber):
+                dic['generate' + str(i)].used_list[j].surface = None
+                dic['generate' + str(i)].used_list[j].center_line = None
+    collect()
 
     # Step8: 交叉　再生成　
     # 更新用リスト各位
+
     temp_list_center_for_next_generation = [[[] for i in range(num_timber)] for j in range(pop_num)]
     temp_list_srf_for_next_generation = [[[] for i in range(num_timber)] for j in range(pop_num)]
     temp_list_select_domain_list_for_next_generation = [[[] for i in range(num_timber)] for j in range(pop_num)]
@@ -231,7 +255,7 @@ for main_loop in range(generation_num):
                 if dic['generate' + str(i)].used_list[k].id == j:
                     list_partner_tim_prior_generation[i][j].extend(dic['generate' + str(i)].used_list[k].partner_tim)
                     break
-    print("list_partner_tim_prior_generation", list_partner_tim_prior_generation)
+    # print("list_partner_tim_prior_generation", list_partner_tim_prior_generation)
 
     # 現世代の再生成開始。
     # ------------------------------------------------------------------------------------------------------------------
@@ -241,16 +265,20 @@ for main_loop in range(generation_num):
 
         pop_regenerate = dic['generate' + str(loop)]
 
-        if information_flag:
-            print("\n")
-            print("start regeneration No.%s" % loop)
-            print("------------------------------------------------------------")
+        print("\n")
+        print("start regeneration No.%s" % loop)
+        print("------------------------------------------------------------")
 
         # decide the 2 crossover point
         # divide_point1, divide_point2 = GA.Crossover.selectDividePoints(num_timber, divide_range)
 
         # Get the index in the 'selected_list' of the individual used for crossover
-        pop_1, pop_2 = GA.Crossover.select2Poplation(selected_list)
+        pop_1_id, pop_2_id = GA.Crossover.select2Poplation(selected_id_list)
+
+        # print(pop_1_id)
+        # print(pop_2_id)
+        pop_1 = dic['generate' + str(pop_1_id)]
+        pop_2 = dic['generate' + str(pop_2_id)]
 
         # 2点交叉　Generateクラス変数の更新とlist_temp_gene_timに新しく生成した遺伝子情報をappendする。 継承する材の番号が格納されたリストをreturnする
         # already_regenerate = GA.Crossover.two_point_crossover(num_timber, divide_range, pop_1, pop_2)
@@ -280,8 +308,11 @@ for main_loop in range(generation_num):
         # select_domain_listの更新2.
         GA.Method.selectDomainRenewal2(decide_inheritance_num_list, num_timber, pop_1)
 
-        # print('inheritance form 1', already_regenerate)
-        # print('inheritance form 2', decide_inheritance_num_list)
+        # partnerの更新ミスがないかチェック
+        for i in range(num_timber):
+            for j in range(len(list_temp_partner_tim[loop][i])):
+                if list_temp_partner_tim[loop][i][j] == i:
+                    raise Exception('miss renewal partner_tim')
 
         for i in range(num_timber):
             for j in range(len(list_temp_partner_tim[loop][i])):
@@ -381,11 +412,9 @@ for main_loop in range(generation_num):
         print("Regenerate Time: {0}  Pop No.{1} Generation {2}".format(regenerate_time, loop, main_loop))
 
         # TODO 再生成した個体がバラバラに成っていないか確認するアルゴリズムを記述する。
-        t1_flag_divede = time.time()
-        flag_divide = GA.Method.confirm_pop_divide(num_timber, pop_1)
-        t2_flag_divide = time.time()
-
-        print("flag_divide : %s  Time: %s" % (flag_divide, t2_flag_divide-t1_flag_divede))
+        # t1_flag_divede = time.time()
+        # flag_divide = GA.Method.confirm_pop_divide(num_timber, pop_1)
+        # t2_flag_divide = time.time()
 
         # Generateクラスインスタンス変数の更新
         # 戻す。　　次世代の個体生成前に保持していたGenerateクラスの変数に戻す。
@@ -394,6 +423,9 @@ for main_loop in range(generation_num):
                                                            temp_list_select_domain_list_for_next_generation,
                                                            list_srf_temp, list_center_line_temp,
                                                            list_select_domain_temp, loop)
+
+        del list_srf_temp, list_center_line_temp
+        collect()
 
         # pop_1のpartner_timを再生成前の状態に戻す。
         for i in range(num_timber):
@@ -460,6 +492,9 @@ for main_loop in range(generation_num):
             dic['generate' + str(i)].used_list[j].select_domain_list.extend(
                 temp_list_select_domain_list_for_next_generation[i][dic['generate' + str(i)].used_list[j].id])
 
+    del temp_list_center_for_next_generation, temp_list_srf_for_next_generation
+    collect()
+
 # Step10:  EVALUATION
 evaluation_value = []
 t3_1 = time.time()
@@ -483,22 +518,29 @@ eva_high_index = evaluation_value.index(max(evaluation_value))
 for i in range(pop_num):
     rs.AddLayer('pop' + str(i))
 
+sort = sorted(evaluation_value, reverse=True)
+draw_value = sort[:5]
+draw_index = []
+for i in range(len(draw_value)):
+    index = evaluation_value.index(draw_value[i])
+    draw_index.append(index)
 
 for i in range(pop_num):
-    for j in range(num_timber):
-        center_line = scriptcontext.doc.Objects.AddCurve(dic['generate' + str(i)].used_list[j].center_line)
-        surface = scriptcontext.doc.Objects.AddBrep(dic['generate' + str(i)].used_list[j].surface)
-        rs.ObjectLayer(center_line, 'pop' + str(i))
-        rs.ObjectLayer(surface, 'pop' + str(i))
+    if i in draw_index:
+        for j in range(num_timber):
+            center_line = scriptcontext.doc.Objects.AddCurve(dic['generate' + str(i)].used_list[j].center_line)
+            surface = scriptcontext.doc.Objects.AddBrep(dic['generate' + str(i)].used_list[j].surface)
+            rs.ObjectLayer(center_line, 'pop' + str(i))
+            rs.ObjectLayer(surface, 'pop' + str(i))
 
 for i in range(pop_num):
-    if i == eva_high_index:
+    if i in draw_index:
         pass
     else:
         rs.LayerVisible('pop' + str(i), False)
 
-rs.CurrentLayer('pop' + str(eva_high_index))
-rs.LayerVisible('all_pop_layer', False)
+# rs.CurrentLayer('pop' + str(eva_high_index))
+# rs.LayerVisible('all_pop_layer', False)
 
 
 t4_1 = time.time()

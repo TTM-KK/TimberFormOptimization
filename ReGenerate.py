@@ -1298,7 +1298,7 @@ def ReGenerateRandomPrioritySmallPartner(already_regenerate_id, yet_regenerate_i
 
             success_flag = False
             success_flag = pop_1.bridge_specify(tim2_index, tim3_index, tim1_index, already_regenerate_id, limit_degree,
-                                                generation_num, main_loop, between_draw_rhino)
+                                                generation_num, main_loop, loop, between_draw_rhino)
 
             if success_flag:
                 yet_regenerate_id.pop(while_loop_count)
@@ -1451,11 +1451,11 @@ def regenerate_priory_small_partner(already_regenerate_id, yet_regenerate_id, po
             if mutation:
                 success_flag = False
                 success_flag = pop_1.cantilever_specify(tim2_index, tim1_index, already_regenerate_id,
-                                                        limit_degree, generation_num, main_loop, between_draw_rhino)
+                                                        limit_degree, generation_num, main_loop, loop, between_draw_rhino)
             else:
                 success_flag = False
                 success_flag = pop_1.bridge_specify(tim2_index, tim3_index, tim1_index, already_regenerate_id,
-                                                    limit_degree, generation_num, main_loop, between_draw_rhino)
+                                                    limit_degree, generation_num, main_loop, loop, between_draw_rhino)
 
             if success_flag:
                 if mutation:
